@@ -55,10 +55,10 @@ export function HeaderUserMenu({
             className="object-cover"
           />
         </span>
-        <span className="hidden max-w-[10rem] sm:block">
-          <span className="block truncate text-xs font-semibold text-slate-900">{displayName}</span>
+        <span className="min-w-0 max-w-[11rem]">
+          <span className="block truncate text-left text-xs font-semibold text-slate-900">{displayName}</span>
           {email ? (
-            <span className="block truncate text-[11px] text-slate-500">{email}</span>
+            <span className="block truncate text-left text-[11px] text-slate-500">{email}</span>
           ) : null}
         </span>
       </button>
