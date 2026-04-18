@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { CONTENT_RATING_OPTIONS } from "@/data/content-ratings";
 import { PROJECT_CATEGORY_OPTIONS } from "@/data/project-form";
-import { AUTH_RETURN_FLASH_KEY, getMockSession, isMockLoggedIn } from "@/lib/mock-auth";
+import { AUTH_RETURN_FLASH_KEY } from "@/lib/auth-flash";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { clearNewProjectDraft, loadNewProjectDraft, saveNewProjectDraft } from "@/lib/new-project-draft";
 import { slugify } from "@/lib/slug";
 import type {
@@ -215,6 +216,7 @@ export function StartProjectPage() {
   const [errors, setErrors] = useState<NewProjectFormErrors>({});
   const [draftReady, setDraftReady] = useState(false);
   const [resumeMessage, setResumeMessage] = useState<string | null>(null);
+  const [signedInAs, setSignedInAs] = useState<string | null>(null);
 
   const [values, setValues] = useState<NewProjectFormState>({
     title: "",
@@ -330,7 +332,7 @@ export function StartProjectPage() {
     setCoverPreview(file);
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const nextErrors = validate(values, coverFile);
     setErrors(nextErrors);
@@ -338,10 +340,18 @@ export function StartProjectPage() {
 
     saveNewProjectDraft(values);
 
-    if (!isMockLoggedIn()) {
+    const supabase = createSupabaseBrowserClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
       router.push(`/login?returnTo=${encodeURIComponent("/projects/new")}`);
       return;
     }
+
+    const metaName =
+      typeof data.user.user_metadata?.display_name === "string"
+        ? data.user.user_metadata.display_name
+        : null;
+    setSignedInAs(metaName || data.user.email || "Signed in");
 
     clearNewProjectDraft();
     setSubmitted(true);
@@ -349,7 +359,6 @@ export function StartProjectPage() {
   }
 
   if (submitted) {
-    const session = getMockSession();
     return (
       <div className="bg-slate-50 py-10 sm:py-14">
         <Container>
@@ -362,10 +371,8 @@ export function StartProjectPage() {
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">
                   Nice—your brief is ready to review
                 </h1>
-                {session ? (
-                  <p className="mt-2 text-sm font-medium text-slate-700">
-                    Signed in as {session.displayName} (demo session in this browser).
-                  </p>
+                {signedInAs ? (
+                  <p className="mt-2 text-sm font-medium text-slate-700">Signed in as {signedInAs}.</p>
                 ) : null}
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
                   This MVP does not save projects to the server yet. When Supabase is connected,

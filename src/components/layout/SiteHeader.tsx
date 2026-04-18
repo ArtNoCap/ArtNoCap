@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import type { User } from "@supabase/supabase-js";
+import { HeaderUserMenu } from "@/components/layout/HeaderUserMenu";
 
 const nav = [
   { href: "/browse", label: "Browse Projects" },
@@ -13,7 +15,11 @@ const nav = [
   { href: "/about", label: "About" },
 ];
 
-export function SiteHeader() {
+export function SiteHeader({
+  user,
+}: {
+  user: { email: User["email"]; displayName: string; avatarUrl: string | null } | null;
+}) {
   const pathname = usePathname() || "/";
   const returnTo = encodeURIComponent(pathname);
 
@@ -46,16 +52,22 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button
-            href={`/login?returnTo=${returnTo}`}
-            variant="ghost"
-            className="hidden sm:inline-flex px-3"
-          >
-            Log in
-          </Button>
-          <Button href={`/signup?returnTo=${returnTo}`} variant="primary" className="px-4 py-2 text-sm">
-            Sign up
-          </Button>
+          {user ? (
+            <HeaderUserMenu email={user.email} displayName={user.displayName} avatarUrl={user.avatarUrl} />
+          ) : (
+            <>
+              <Button
+                href={`/login?returnTo=${returnTo}`}
+                variant="ghost"
+                className="hidden sm:inline-flex px-3"
+              >
+                Log in
+              </Button>
+              <Button href={`/signup?returnTo=${returnTo}`} variant="primary" className="px-4 py-2 text-sm">
+                Sign up
+              </Button>
+            </>
+          )}
         </div>
       </Container>
     </header>

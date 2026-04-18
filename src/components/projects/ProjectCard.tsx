@@ -2,13 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { ArrowRight, Clock, Heart, Images, ThumbsUp } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CONTENT_RATING_OPTIONS } from "@/data/content-ratings";
 import type { Artist } from "@/types";
 import type { Project } from "@/types";
 import { Badge } from "@/components/ui/Badge";
 import { formatDaysLeft } from "@/lib/format";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 function SpotlightPill({ kind }: { kind: "hot" | "new" }) {
   if (kind === "hot") {
@@ -25,20 +27,67 @@ function SpotlightPill({ kind }: { kind: "hot" | "new" }) {
   );
 }
 
-export function ProjectCard({ project, artist }: { project: Project; artist: Artist }) {
-  const [favorited, setFavorited] = useState(false);
+export function ProjectCard({
+  project,
+  artist,
+  initialFavorited = false,
+}: {
+  project: Project;
+  artist: Artist;
+  initialFavorited?: boolean;
+}) {
+  const router = useRouter();
+  const pathname = usePathname() || "/";
+  const [favorited, setFavorited] = useState(initialFavorited);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
+
+  useEffect(() => {
+    setFavorited(initialFavorited);
+  }, [initialFavorited, project.id]);
+
   const tagPills = project.tags.slice(0, 3);
   const ratingLabel =
     CONTENT_RATING_OPTIONS.find((o) => o.id === project.contentRating)?.label ?? "—";
+
+  async function toggleFavorite() {
+    const supabase = createSupabaseBrowserClient();
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      router.push(`/login?returnTo=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
+    const next = !favorited;
+    setFavorited(next);
+    setFavoriteBusy(true);
+    try {
+      const res = await fetch("/api/favorites/projects", {
+        method: next ? "POST" : "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ projectId: project.id }),
+      });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+      if (!res.ok || !json?.ok) {
+        setFavorited(!next);
+      }
+    } finally {
+      setFavoriteBusy(false);
+    }
+  }
 
   return (
     <article className="relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-md">
       <button
         type="button"
         className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm ring-1 ring-slate-200/80 backdrop-blur hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-        aria-label={favorited ? "Remove from saved (demo)" : "Save project (demo)"}
+        aria-label={favorited ? "Remove project from saved" : "Save project"}
         aria-pressed={favorited}
-        onClick={() => setFavorited((v) => !v)}
+        disabled={favoriteBusy}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          void toggleFavorite();
+        }}
       >
         <Heart
           className={`h-4 w-4 ${favorited ? "fill-rose-500 text-rose-500" : ""}`}

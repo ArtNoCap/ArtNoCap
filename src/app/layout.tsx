@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { SiteFooter } from "@/components/layout/SiteFooter";
-import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteHeaderServer } from "@/components/layout/SiteHeaderServer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full scroll-smooth`}>
       <body className="flex min-h-full flex-col bg-white font-sans text-slate-900 antialiased">
-        <SiteHeader />
+        <SiteHeaderServer />
         <main className="flex-1">{children}</main>
         <SiteFooter />
       </body>

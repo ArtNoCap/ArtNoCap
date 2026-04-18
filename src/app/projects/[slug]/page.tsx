@@ -4,12 +4,54 @@ import { getArtistById } from "@/data/artists";
 import { getProjectBySlug } from "@/data/projects";
 import { getSubmissionsByProjectId } from "@/data/submissions";
 import type { SubmissionWithArtist } from "@/components/projects/detail/types";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isUuid } from "@/lib/is-uuid";
+import type { Submission } from "@/types";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   return { title: `Project: ${slug}` };
+}
+
+async function loadRemoteSubmissionsForProject(projectId: string): Promise<Submission[]> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return [];
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    if (!supabase) return [];
+
+    const q = await supabase
+      .from("submissions")
+      .select("id,project_id,public_url,vote_count,created_at,user_id")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    if (q.error) return [];
+
+    const rows = q.data ?? [];
+    return rows.map((r) => {
+      const id = String(r.id);
+      const createdAt = typeof r.created_at === "string" ? r.created_at : new Date().toISOString();
+      const voteCount = typeof r.vote_count === "number" ? r.vote_count : 0;
+      const imageUrl = typeof r.public_url === "string" ? r.public_url : "";
+      const artistId = typeof r.user_id === "string" && r.user_id ? `u:${r.user_id}` : "anon";
+
+      return {
+        id,
+        projectId: String(r.project_id),
+        artistId,
+        imageUrl,
+        voteCount,
+        createdAt,
+      };
+    });
+  } catch {
+    return [];
+  }
 }
 
 export default async function ProjectDetailPlaceholderPage({ params }: Props) {
@@ -42,14 +84,66 @@ export default async function ProjectDetailPlaceholderPage({ params }: Props) {
     );
   }
 
-  const submissions = getSubmissionsByProjectId(project.id);
-  const withArtists: SubmissionWithArtist[] = submissions
+  const local = getSubmissionsByProjectId(project.id);
+  const remote = await loadRemoteSubmissionsForProject(project.id);
+
+  const mergedById = new Map<string, Submission>();
+  for (const s of local) mergedById.set(s.id, s);
+  for (const s of remote) mergedById.set(s.id, s);
+  const merged = [...mergedById.values()].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  const withArtists: SubmissionWithArtist[] = merged
     .map((s) => {
       const artist = getArtistById(s.artistId);
-      if (!artist) return null;
+      if (!artist) {
+        if (!isUuid(s.id)) return null;
+        return {
+          ...s,
+          artist: {
+            id: s.artistId,
+            slug: "community",
+            displayName: "Community upload",
+            avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=community",
+            bio: "",
+            joinedAt: s.createdAt,
+            stats: {
+              totalSubmissions: 0,
+              totalVotesReceived: 0,
+              selectedWins: 0,
+              projectsJoined: 0,
+            },
+          },
+        };
+      }
       return { ...s, artist };
     })
     .filter(Boolean) as SubmissionWithArtist[];
 
-  return <ProjectDetailView model={{ project, creator, submissions: withArtists }} />;
+  let favoritedSubmissionIds: string[] = [];
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    try {
+      const supabase = await createSupabaseServerClient();
+      if (!supabase) {
+        favoritedSubmissionIds = [];
+      } else {
+        favoritedSubmissionIds = [];
+        const { data: userData } = await supabase.auth.getUser();
+        const uuidIds = withArtists.map((s) => s.id).filter(isUuid);
+        if (userData.user && uuidIds.length > 0) {
+          const fav = await supabase.from("favorite_submissions").select("submission_id").in("submission_id", uuidIds);
+          if (!fav.error) {
+            favoritedSubmissionIds = (fav.data ?? []).map((r) => String(r.submission_id)).filter(Boolean);
+          }
+        }
+      }
+    } catch {
+      favoritedSubmissionIds = [];
+    }
+  }
+
+  return (
+    <ProjectDetailView model={{ project, creator, submissions: withArtists }} favoritedSubmissionIds={favoritedSubmissionIds} />
+  );
 }

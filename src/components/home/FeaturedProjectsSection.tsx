@@ -3,10 +3,30 @@ import { ProjectCard } from "@/components/projects/ProjectCard";
 import { getFeaturedProjects, projects } from "@/data/projects";
 import { getArtistById } from "@/data/artists";
 import { deriveProjectSpotlights } from "@/lib/spotlight";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export function FeaturedProjectsSection() {
+export async function FeaturedProjectsSection() {
   const featured = getFeaturedProjects(5);
   const spotlightById = deriveProjectSpotlights(projects, new Date());
+
+  const favoritedIds = new Set<string>();
+  try {
+    const supabase = await createSupabaseServerClient();
+    if (supabase) {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user && featured.length > 0) {
+        const ids = featured.map((p) => p.id);
+        const fav = await supabase.from("favorite_projects").select("project_id").in("project_id", ids);
+        if (!fav.error) {
+          for (const row of fav.data ?? []) {
+            if (row?.project_id) favoritedIds.add(row.project_id);
+          }
+        }
+      }
+    }
+  } catch {
+    // Supabase not configured, or favorites tables not migrated yet — cards still render.
+  }
 
   return (
     <section className="bg-slate-50 py-16 sm:py-20">
@@ -26,7 +46,14 @@ export function FeaturedProjectsSection() {
             const artist = getArtistById(project.creatorId);
             if (!artist) return null;
             const spotlight = spotlightById[project.id];
-            return <ProjectCard key={project.id} project={{ ...project, spotlight }} artist={artist} />;
+            return (
+              <ProjectCard
+                key={project.id}
+                project={{ ...project, spotlight }}
+                artist={artist}
+                initialFavorited={favoritedIds.has(project.id)}
+              />
+            );
           })}
         </div>
       </Container>

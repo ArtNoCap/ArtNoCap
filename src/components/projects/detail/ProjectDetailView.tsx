@@ -14,7 +14,13 @@ function sumVotes(votes: Record<string, number>) {
   return Object.values(votes).reduce((acc, n) => acc + n, 0);
 }
 
-export function ProjectDetailView({ model }: { model: ProjectDetailModel }) {
+export function ProjectDetailView({
+  model,
+  favoritedSubmissionIds = [],
+}: {
+  model: ProjectDetailModel;
+  favoritedSubmissionIds?: string[];
+}) {
   const [tab, setTab] = useState<ProjectTabId>("submissions");
   const [sort, setSort] = useState<SubmissionSortId>("top");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -37,6 +43,8 @@ export function ProjectDetailView({ model }: { model: ProjectDetailModel }) {
     list.sort((a, b) => (voteCounts[b.id] ?? 0) - (voteCounts[a.id] ?? 0));
     return list;
   }, [model.submissions, sort, voteCounts]);
+
+  const favoritedSubmissionIdSet = useMemo(() => new Set(favoritedSubmissionIds), [favoritedSubmissionIds]);
 
   function onVote(id: string) {
     setVoteCounts((prev) => {
@@ -92,10 +100,10 @@ export function ProjectDetailView({ model }: { model: ProjectDetailModel }) {
                     <li key={s.id}>
                       <SubmissionCard
                         submission={s}
-                        projectSlug={model.project.slug}
                         voteCount={voteCounts[s.id] ?? 0}
                         selected={selectedId === s.id}
                         onVote={() => onVote(s.id)}
+                        initialSaved={favoritedSubmissionIdSet.has(s.id)}
                       />
                     </li>
                   ))}

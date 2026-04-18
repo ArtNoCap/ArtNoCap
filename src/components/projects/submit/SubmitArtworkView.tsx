@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { getMySubmission, setMySubmission } from "@/lib/local-submissions";
-import { getOrCreateSubmitterKey } from "@/lib/submitter-key";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { Artist, Project } from "@/types";
 
 const maxBytes = 10 * 1024 * 1024;
@@ -28,8 +28,29 @@ export function SubmitArtworkView({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [pickedFile, setPickedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const alreadySubmitted = useMemo(() => getMySubmission(project.id), [project.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data } = await supabase.auth.getUser();
+        if (cancelled) return;
+        setIsLoggedIn(Boolean(data.user));
+      } catch {
+        if (!cancelled) setIsLoggedIn(false);
+      } finally {
+        if (!cancelled) setAuthReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function onPickFile() {
     fileInputRef.current?.click();
@@ -57,8 +78,13 @@ export function SubmitArtworkView({
   }
 
   async function onSubmit() {
+    if (!authReady) return;
+    if (!isLoggedIn) {
+      setError("Please log in to submit artwork.");
+      return;
+    }
     if (alreadySubmitted) {
-      setError("You’ve already submitted to this project (demo rule: one submission per project).");
+      setError("This browser already recorded a submission for this project. If that was a mistake, clear site data for ArtNoCap or try another browser profile.");
       return;
     }
     if (!imageUrl) {
@@ -80,7 +106,6 @@ export function SubmitArtworkView({
       const fd = new FormData();
       fd.set("file", pickedFile);
       fd.set("rightsConfirmed", "true");
-      fd.set("submitterKey", getOrCreateSubmitterKey());
 
       const res = await fetch(`/api/projects/${project.slug}/submissions`, {
         method: "POST",
@@ -119,12 +144,10 @@ export function SubmitArtworkView({
                 <CheckCircle2 className="h-5 w-5" aria-hidden />
               </span>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                  Submission received (demo)
-                </h1>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">Submission received</h1>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  Your artwork was uploaded to Supabase Storage and a submission row was created (if
-                  your project is configured with the required env vars + SQL migration).
+                  Your artwork was uploaded to Supabase Storage and saved as a submission (requires the
+                  Supabase env vars + SQL migrations).
                 </p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <Button
@@ -172,8 +195,8 @@ export function SubmitArtworkView({
 
             {alreadySubmitted ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-950">
-                You’ve already submitted to this project on this device. (Demo: one submission per
-                project.)
+                This browser already recorded a submission for this project. Accounts are limited to one
+                submission per project; if you need to retry, clear ArtNoCap site data for this browser.
               </div>
             ) : null}
 

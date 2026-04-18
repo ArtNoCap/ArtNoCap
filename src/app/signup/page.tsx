@@ -5,7 +5,7 @@ import { Container } from "@/components/ui/Container";
 
 export const metadata: Metadata = {
   title: "Create profile",
-  description: "Create an ArtNoCap profile (demo — Supabase later).",
+  description: "Create an ArtNoCap profile with Supabase Auth (email + password).",
 };
 
 function SignupFallback() {

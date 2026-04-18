@@ -2,26 +2,65 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { VoteButton } from "@/components/projects/detail/VoteButton";
 import type { SubmissionWithArtist } from "@/components/projects/detail/types";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { isUuid } from "@/lib/is-uuid";
 
 export function SubmissionCard({
   submission,
-  projectSlug,
   voteCount,
   selected,
   onVote,
+  initialSaved = false,
 }: {
   submission: SubmissionWithArtist;
-  projectSlug: string;
   voteCount: number;
   selected: boolean;
   onVote: () => void;
+  initialSaved?: boolean;
 }) {
-  const [saved, setSaved] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname() || "/";
+  const [saved, setSaved] = useState(initialSaved);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const canPersistFavorite = isUuid(submission.id);
+
+  useEffect(() => {
+    setSaved(initialSaved);
+  }, [initialSaved, submission.id]);
+
+  async function toggleSaved() {
+    if (!canPersistFavorite) return;
+
+    const supabase = createSupabaseBrowserClient();
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      router.push(`/login?returnTo=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
+    const next = !saved;
+    setSaved(next);
+    setSaveBusy(true);
+    try {
+      const res = await fetch("/api/favorites/submissions", {
+        method: next ? "POST" : "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ submissionId: submission.id }),
+      });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+      if (!res.ok || !json?.ok) {
+        setSaved(!next);
+      }
+    } finally {
+      setSaveBusy(false);
+    }
+  }
 
   return (
     <article
@@ -31,18 +70,22 @@ export function SubmissionCard({
           : "ring-slate-200/80 hover:-translate-y-0.5 hover:shadow-md"
       }`}
     >
-      <button
-        type="button"
-        className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm ring-1 ring-slate-200/80 backdrop-blur hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-        aria-label={saved ? "Remove from saved (demo)" : "Save submission (demo)"}
-        aria-pressed={saved}
-        onClick={() => setSaved((v) => !v)}
-      >
-        <Heart
-          className={`h-4 w-4 ${saved ? "fill-rose-500 text-rose-500" : ""}`}
-          aria-hidden
-        />
-      </button>
+      {canPersistFavorite ? (
+        <button
+          type="button"
+          className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm ring-1 ring-slate-200/80 backdrop-blur hover:text-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          aria-label={saved ? "Remove submission from saved" : "Save submission"}
+          aria-pressed={saved}
+          disabled={saveBusy}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            void toggleSaved();
+          }}
+        >
+          <Heart className={`h-4 w-4 ${saved ? "fill-rose-500 text-rose-500" : ""}`} aria-hidden />
+        </button>
+      ) : null}
 
       <div className="relative aspect-[4/3] w-full bg-slate-100">
         <Image

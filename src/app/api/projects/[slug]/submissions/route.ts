@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getProjectBySlug } from "@/data/projects";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/admin";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route";
 
 export const runtime = "nodejs";
 
 const bucket = "submission-images";
 const maxBytes = 10 * 1024 * 1024;
 
-export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
 
   const project = getProjectBySlug(slug);
@@ -23,6 +24,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ ok: false, error: message }, { status: 501 });
   }
 
+  const { supabase: authed, applyCookies } = createSupabaseRouteHandlerClient(req);
+  const { data: userData, error: userError } = await authed.auth.getUser();
+  if (userError || !userData.user) {
+    return NextResponse.json({ ok: false, error: "You must be logged in to submit." }, { status: 401 });
+  }
+  const userId = userData.user.id;
+
   const contentType = req.headers.get("content-type") || "";
   if (!contentType.includes("multipart/form-data")) {
     return NextResponse.json({ ok: false, error: "Expected multipart/form-data" }, { status: 415 });
@@ -31,13 +39,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   const form = await req.formData();
   const file = form.get("file");
   const rights = form.get("rightsConfirmed");
-  const submitterKey = form.get("submitterKey");
 
   if (rights !== "true") {
     return NextResponse.json({ ok: false, error: "Rights confirmation required" }, { status: 400 });
-  }
-  if (typeof submitterKey !== "string" || submitterKey.trim().length < 8) {
-    return NextResponse.json({ ok: false, error: "Missing submitterKey" }, { status: 400 });
   }
   if (!(file instanceof File)) {
     return NextResponse.json({ ok: false, error: "Missing file" }, { status: 400 });
@@ -61,7 +65,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ ok: false, error: "Only PNG, JPG, or WEBP are supported" }, { status: 400 });
   }
 
-  const objectPath = `${project.id}/${crypto.randomUUID()}.${ext}`;
+  const objectPath = `${project.id}/${userId}/${crypto.randomUUID()}.${ext}`;
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const upload = await supabase.storage.from(bucket).upload(objectPath, bytes, {
@@ -80,7 +84,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   const insert = await supabase.from("submissions").insert({
     project_id: project.id,
     project_slug: project.slug,
-    submitter_key: submitterKey.trim(),
+    submitter_key: userId,
+    user_id: userId,
     image_path: objectPath,
     public_url: publicUrl,
     vote_count: 0,
@@ -101,10 +106,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     return NextResponse.json({ ok: false, error: insert.error.message }, { status: 400 });
   }
 
-  return NextResponse.json({
+  const json = NextResponse.json({
     ok: true,
     submissionId: insert.data.id,
     publicUrl,
     imagePath: objectPath,
   });
+  applyCookies(json);
+
+  return json;
 }

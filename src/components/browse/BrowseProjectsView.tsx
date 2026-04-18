@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, Users, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { ProjectCard } from "@/components/projects/ProjectCard";
@@ -20,6 +20,7 @@ import {
   sortBrowseProjects,
 } from "@/lib/browse-projects";
 import { deriveProjectSpotlights } from "@/lib/spotlight";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const PAGE_SIZE = 6;
 
@@ -47,6 +48,7 @@ export function BrowseProjectsView() {
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<ProjectCategoryOptionId[]>([]);
   const [ratingFilter, setRatingFilter] = useState<BrowseRatingFilter>("all");
+  const [favoritedByProjectId, setFavoritedByProjectId] = useState<Record<string, boolean>>({});
 
   const keywordSuggestions = useMemo(() => browseKeywordSuggestions(projects), []);
   const spotlightById = useMemo(() => deriveProjectSpotlights(projects, new Date()), []);
@@ -64,6 +66,54 @@ export function BrowseProjectsView() {
   const totalPages = Math.max(1, Math.ceil(processed.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const slice = processed.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const pageProjectIdsKey = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return processed
+      .slice(start, start + PAGE_SIZE)
+      .map((p) => p.id)
+      .join(",");
+  }, [processed, currentPage]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFavorites() {
+      const ids = pageProjectIdsKey
+        ? pageProjectIdsKey.split(",").map((s) => s.trim()).filter(Boolean)
+        : [];
+      if (ids.length === 0) {
+        setFavoritedByProjectId({});
+        return;
+      }
+
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        setFavoritedByProjectId({});
+        return;
+      }
+
+      const qs = new URLSearchParams({ ids: ids.join(",") });
+      const res = await fetch(`/api/favorites/projects?${qs.toString()}`, { method: "GET" });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; favorited?: string[] } | null;
+      if (cancelled) return;
+      if (!res.ok || !json?.ok || !Array.isArray(json.favorited)) {
+        setFavoritedByProjectId({});
+        return;
+      }
+
+      const next: Record<string, boolean> = {};
+      for (const id of ids) next[id] = false;
+      for (const id of json.favorited) next[id] = true;
+      setFavoritedByProjectId(next);
+    }
+
+    void loadFavorites();
+    return () => {
+      cancelled = true;
+    };
+  }, [pageProjectIdsKey]);
 
   const hasRefinements =
     search.trim().length > 0 || selectedCategories.length > 0 || ratingFilter !== "all";
@@ -254,9 +304,13 @@ export function BrowseProjectsView() {
               const artist = getArtistById(project.creatorId);
               if (!artist) return null;
               const spotlight = spotlightById[project.id];
-              return (
+                  return (
                 <li key={project.id}>
-                  <ProjectCard project={{ ...project, spotlight }} artist={artist} />
+                  <ProjectCard
+                    project={{ ...project, spotlight }}
+                    artist={artist}
+                    initialFavorited={Boolean(favoritedByProjectId[project.id])}
+                  />
                 </li>
               );
             })}

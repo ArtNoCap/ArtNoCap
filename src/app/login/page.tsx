@@ -5,7 +5,7 @@ import { Container } from "@/components/ui/Container";
 
 export const metadata: Metadata = {
   title: "Log in",
-  description: "Sign in to ArtNoCap (demo auth — Supabase later).",
+  description: "Sign in to ArtNoCap with Supabase Auth (email + password).",
 };
 
 function LoginFallback() {
