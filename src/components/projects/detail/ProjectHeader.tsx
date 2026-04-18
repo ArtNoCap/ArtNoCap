@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, Images, ThumbsUp } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDaysLeft } from "@/lib/format";
 import type { ProjectDetailModel } from "@/components/projects/detail/types";
