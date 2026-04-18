@@ -23,10 +23,10 @@ export function CtaBannerSection() {
               just great artwork.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button href="/signup?returnTo=%2F" variant="primary" className="px-6 py-3 text-base">
+              <Button href="/signup?returnTo=%2F" variant="primary" size="lg">
                 Sign up for free
               </Button>
-              <Button href="/login?returnTo=%2F" variant="outlineLight" className="px-6 py-3 text-base">
+              <Button href="/login?returnTo=%2F" variant="outlineLight" size="lg">
                 Log in
               </Button>
             </div>

@@ -98,7 +98,7 @@ export function LoginForm() {
               {error}
             </p>
           ) : null}
-          <Button type="submit" variant="primary" className="w-full justify-center py-3" disabled={busy}>
+          <Button type="submit" variant="primary" size="lg" className="w-full justify-center" disabled={busy}>
             {busy ? "Signing in…" : "Continue"}
           </Button>
           <p className="text-center text-xs text-slate-500">

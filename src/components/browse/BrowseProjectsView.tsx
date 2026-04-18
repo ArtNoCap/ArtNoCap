@@ -8,8 +8,7 @@ import { ProjectCard } from "@/components/projects/ProjectCard";
 import { CONTENT_RATING_OPTIONS } from "@/data/content-ratings";
 import { PROJECT_CATEGORY_OPTIONS } from "@/data/project-form";
 import type { ProjectCategoryOptionId } from "@/data/project-form";
-import { getArtistById } from "@/data/artists";
-import { projects } from "@/data/projects";
+import type { Artist, Project } from "@/types";
 import {
   type BrowseFilterId,
   type BrowseRatingFilter,
@@ -41,7 +40,13 @@ const SORT_OPTIONS: { id: BrowseSortId; label: string }[] = [
 
 const DATALIST_ID = "browse-search-suggestions";
 
-export function BrowseProjectsView() {
+export function BrowseProjectsView({
+  catalogProjects,
+  creatorsByCreatorId,
+}: {
+  catalogProjects: Project[];
+  creatorsByCreatorId: Map<string, Artist>;
+}) {
   const [filter, setFilter] = useState<BrowseFilterId>("all");
   const [sort, setSort] = useState<BrowseSortId>("popular");
   const [page, setPage] = useState(1);
@@ -50,18 +55,18 @@ export function BrowseProjectsView() {
   const [ratingFilter, setRatingFilter] = useState<BrowseRatingFilter>("all");
   const [favoritedByProjectId, setFavoritedByProjectId] = useState<Record<string, boolean>>({});
 
-  const keywordSuggestions = useMemo(() => browseKeywordSuggestions(projects), []);
-  const spotlightById = useMemo(() => deriveProjectSpotlights(projects, new Date()), []);
+  const keywordSuggestions = useMemo(() => browseKeywordSuggestions(catalogProjects), [catalogProjects]);
+  const spotlightById = useMemo(() => deriveProjectSpotlights(catalogProjects, new Date()), [catalogProjects]);
 
   const processed = useMemo(() => {
-    const base = filterBrowseProjects(projects, filter);
+    const base = filterBrowseProjects(catalogProjects, filter);
     const narrowed = refineBrowseProjects(base, {
       search,
       categoryIds: selectedCategories,
       rating: ratingFilter,
     });
     return sortBrowseProjects(narrowed, sort);
-  }, [filter, sort, search, selectedCategories, ratingFilter]);
+  }, [catalogProjects, filter, sort, search, selectedCategories, ratingFilter]);
 
   const totalPages = Math.max(1, Math.ceil(processed.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -301,7 +306,7 @@ export function BrowseProjectsView() {
         ) : (
           <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {slice.map((project) => {
-              const artist = getArtistById(project.creatorId);
+              const artist = creatorsByCreatorId.get(project.creatorId);
               if (!artist) return null;
               const spotlight = spotlightById[project.id];
                   return (
@@ -375,7 +380,7 @@ export function BrowseProjectsView() {
               </p>
             </div>
           </div>
-          <Button href="/projects/new" variant="primary" className="w-full shrink-0 px-5 py-3 sm:w-auto">
+          <Button href="/projects/new" variant="primary" size="lg" className="w-full shrink-0 sm:w-auto">
             Start a Project
           </Button>
         </section>

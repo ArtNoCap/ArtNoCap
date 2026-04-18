@@ -17,12 +17,14 @@ export function SubmissionCard({
   selected,
   onVote,
   initialSaved = false,
+  voteDisabled = false,
 }: {
   submission: SubmissionWithArtist;
   voteCount: number;
   selected: boolean;
   onVote: () => void;
   initialSaved?: boolean;
+  voteDisabled?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname() || "/";
@@ -123,7 +125,7 @@ export function SubmissionCard({
             <span className="tabular-nums">{voteCount}</span>{" "}
             <span className="text-slate-500">{voteCount === 1 ? "vote" : "votes"}</span>
           </div>
-          <VoteButton selected={selected} onClick={onVote} />
+          <VoteButton selected={selected} onClick={onVote} disabled={voteDisabled} />
         </div>
       </div>
     </article>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
@@ -9,6 +10,8 @@ import { ProjectTabs, type ProjectTabId } from "@/components/projects/detail/Pro
 import { SubmissionCard } from "@/components/projects/detail/SubmissionCard";
 import { SortDropdown, type SubmissionSortId } from "@/components/projects/detail/SortDropdown";
 import type { ProjectDetailModel } from "@/components/projects/detail/types";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { isUuid } from "@/lib/is-uuid";
 
 function sumVotes(votes: Record<string, number>) {
   return Object.values(votes).reduce((acc, n) => acc + n, 0);
@@ -17,13 +20,21 @@ function sumVotes(votes: Record<string, number>) {
 export function ProjectDetailView({
   model,
   favoritedSubmissionIds = [],
+  initialMyVoteSubmissionId = null,
 }: {
   model: ProjectDetailModel;
   favoritedSubmissionIds?: string[];
+  initialMyVoteSubmissionId?: string | null;
 }) {
+  const router = useRouter();
   const [tab, setTab] = useState<ProjectTabId>("submissions");
   const [sort, setSort] = useState<SubmissionSortId>("top");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialMyVoteSubmissionId ?? null);
+  const [voteBusy, setVoteBusy] = useState(false);
+
+  useEffect(() => {
+    setSelectedId(initialMyVoteSubmissionId ?? null);
+  }, [initialMyVoteSubmissionId]);
 
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>(() => {
     const out: Record<string, number> = {};
@@ -46,7 +57,7 @@ export function ProjectDetailView({
 
   const favoritedSubmissionIdSet = useMemo(() => new Set(favoritedSubmissionIds), [favoritedSubmissionIds]);
 
-  function onVote(id: string) {
+  function onVoteLocal(id: string) {
     setVoteCounts((prev) => {
       const next = { ...prev };
       const already = selectedId === id;
@@ -67,6 +78,48 @@ export function ProjectDetailView({
     setSelectedId((cur) => (cur === id ? null : id));
   }
 
+  async function onVotePersisted(id: string) {
+    if (voteBusy) return;
+    setVoteBusy(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        router.push(`/login?returnTo=${encodeURIComponent(`/projects/${model.project.slug}`)}`);
+        return;
+      }
+
+      const nextSelected = selectedId === id ? null : id;
+      const res = await fetch(`/api/projects/${model.project.slug}/votes`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ submissionId: nextSelected }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        voteCounts?: Record<string, number>;
+        myVoteSubmissionId?: string | null;
+      } | null;
+
+      if (!res.ok || !json?.ok || !json.voteCounts) {
+        return;
+      }
+
+      setVoteCounts((prev) => ({ ...prev, ...json.voteCounts }));
+      setSelectedId(json.myVoteSubmissionId ?? null);
+    } finally {
+      setVoteBusy(false);
+    }
+  }
+
+  function onVote(id: string) {
+    if (!isUuid(id)) {
+      onVoteLocal(id);
+      return;
+    }
+    void onVotePersisted(id);
+  }
+
   return (
     <div className="bg-slate-50 pb-16 pt-10 sm:pt-12">
       <Container>
@@ -85,11 +138,7 @@ export function ProjectDetailView({
                   <p className="text-lg font-bold text-slate-900">No submissions yet</p>
                   <p className="mt-2 text-sm text-slate-600">Be the first to submit a design.</p>
                   <div className="mt-6 flex justify-center">
-                    <Button
-                      href={`/projects/${model.project.slug}/submit`}
-                      variant="primary"
-                      className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3 text-white shadow-lg shadow-indigo-600/20 hover:from-indigo-500 hover:to-violet-500"
-                    >
+                    <Button href={`/projects/${model.project.slug}/submit`} variant="primary" size="lg">
                       Submit Artwork
                     </Button>
                   </div>
@@ -104,6 +153,7 @@ export function ProjectDetailView({
                         selected={selectedId === s.id}
                         onVote={() => onVote(s.id)}
                         initialSaved={favoritedSubmissionIdSet.has(s.id)}
+                        voteDisabled={voteBusy && isUuid(s.id)}
                       />
                     </li>
                   ))}
@@ -120,7 +170,8 @@ export function ProjectDetailView({
                       <h2 className="text-base font-semibold text-slate-900">How voting works</h2>
                       <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
                         Vote for your favorite submission. You can change your vote until the project ends.
-                        Only one vote per user per project (UI-only for now).
+                        Logged-in users get one vote per project on real submissions; demo submissions stay
+                        on-device only.
                       </p>
                     </div>
                   </div>
@@ -161,4 +212,3 @@ export function ProjectDetailView({
     </div>
   );
 }
-

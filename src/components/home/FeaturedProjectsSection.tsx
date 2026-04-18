@@ -1,13 +1,16 @@
 import { Container } from "@/components/ui/Container";
 import { ProjectCard } from "@/components/projects/ProjectCard";
-import { getFeaturedProjects, projects } from "@/data/projects";
-import { getArtistById } from "@/data/artists";
+import { Button } from "@/components/ui/Button";
+import { resolveCreatorsForProjects } from "@/lib/catalog/creators";
 import { deriveProjectSpotlights } from "@/lib/spotlight";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { loadProjectsForApp } from "@/lib/catalog/load";
 
 export async function FeaturedProjectsSection() {
-  const featured = getFeaturedProjects(5);
-  const spotlightById = deriveProjectSpotlights(projects, new Date());
+  const catalog = await loadProjectsForApp();
+  const featured = catalog.slice(0, 5);
+  const spotlightById = deriveProjectSpotlights(catalog, new Date());
+  const artistByCreatorId = await resolveCreatorsForProjects(featured);
 
   const favoritedIds = new Set<string>();
   try {
@@ -28,6 +31,26 @@ export async function FeaturedProjectsSection() {
     // Supabase not configured, or favorites tables not migrated yet — cards still render.
   }
 
+  if (featured.length === 0) {
+    return (
+      <section className="bg-slate-50 py-16 sm:py-20">
+        <Container>
+          <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200/80">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">No projects yet</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Publish the first brief—once it is in Supabase it will show up here and on Browse.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Button href="/projects/new" variant="primary" size="lg">
+                Start a project
+              </Button>
+            </div>
+          </div>
+        </Container>
+      </section>
+    );
+  }
+
   return (
     <section className="bg-slate-50 py-16 sm:py-20">
       <Container>
@@ -43,7 +66,7 @@ export async function FeaturedProjectsSection() {
         </div>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {featured.map((project) => {
-            const artist = getArtistById(project.creatorId);
+            const artist = artistByCreatorId.get(project.creatorId);
             if (!artist) return null;
             const spotlight = spotlightById[project.id];
             return (

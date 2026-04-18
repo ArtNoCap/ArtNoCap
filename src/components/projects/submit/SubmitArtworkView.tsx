@@ -150,14 +150,10 @@ export function SubmitArtworkView({
                   Supabase env vars + SQL migrations).
                 </p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <Button
-                    href={`/projects/${project.slug}`}
-                    variant="primary"
-                    className="justify-center px-5 py-3"
-                  >
+                  <Button href={`/projects/${project.slug}`} variant="primary" size="lg" className="justify-center">
                     Back to voting
                   </Button>
-                  <Button href="/browse" variant="secondary" className="justify-center px-5 py-3">
+                  <Button href="/browse" variant="secondary" size="lg" className="justify-center">
                     Browse projects
                   </Button>
                 </div>
@@ -295,7 +291,8 @@ export function SubmitArtworkView({
                 <Button
                   type="button"
                   variant="primary"
-                  className="w-full justify-center rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 text-base text-white shadow-lg shadow-indigo-600/20 hover:from-indigo-500 hover:to-violet-500"
+                  size="lg"
+                  className="w-full justify-center"
                   onClick={() => void onSubmit()}
                   disabled={Boolean(alreadySubmitted) || isSubmitting}
                 >

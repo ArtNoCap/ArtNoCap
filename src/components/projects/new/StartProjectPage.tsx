@@ -13,7 +13,7 @@ import {
   Sparkles,
   UploadCloud,
 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonSurfaceClasses } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { CONTENT_RATING_OPTIONS } from "@/data/content-ratings";
 import { PROJECT_CATEGORY_OPTIONS } from "@/data/project-form";
@@ -73,36 +73,31 @@ const labelClass = "block text-sm font-semibold text-slate-900";
 
 const maxCoverBytes = 10 * 1024 * 1024;
 
-const COVER_PICKER_PRESETS: { id: string; label: string; imageUrl: string }[] = [
+/** Starter covers: UI is text + gradient; `imageUrl` is the fallback asset stored for the project. */
+const COVER_PICKER_PRESETS: { id: string; label: string; imageUrl: string; tileClass: string }[] = [
   {
-    id: "abstract-indigo",
-    label: "Abstract indigo",
-    imageUrl: "https://images.unsplash.com/photo-1526481280695-3c687fd643ed?w=800&h=500&fit=crop",
+    id: "surprise-me",
+    label: "Surprise me",
+    imageUrl: "https://images.unsplash.com/photo-1557672172-298e0d96a2b2?w=800&h=500&fit=crop",
+    tileClass: "bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-400",
   },
   {
-    id: "soft-gradient",
-    label: "Soft gradient",
-    imageUrl: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&h=500&fit=crop",
+    id: "make-it-weird",
+    label: "Make it Weird",
+    imageUrl: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800&h=500&fit=crop",
+    tileClass: "bg-gradient-to-br from-lime-400 via-fuchsia-600 to-cyan-400",
   },
   {
-    id: "minimal-slate",
-    label: "Minimal slate",
-    imageUrl: "https://images.unsplash.com/photo-1520697830682-bbb6e85e2b0d?w=800&h=500&fit=crop",
+    id: "anime-like",
+    label: "Anime Like",
+    imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=500&fit=crop",
+    tileClass: "bg-gradient-to-br from-pink-400 via-purple-500 to-sky-400",
   },
   {
-    id: "warm-paper",
-    label: "Warm paper",
-    imageUrl: "https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81?w=800&h=500&fit=crop",
-  },
-  {
-    id: "studio-light",
-    label: "Studio light",
-    imageUrl: "https://images.unsplash.com/photo-1520974735194-6b9f4df2f4a3?w=800&h=500&fit=crop",
-  },
-  {
-    id: "nature-quiet",
-    label: "Nature quiet",
-    imageUrl: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=800&h=500&fit=crop",
+    id: "dark-noir",
+    label: "Dark and Noir",
+    imageUrl: "https://images.unsplash.com/photo-1519501025264-65eca15dcd58?w=800&h=500&fit=crop",
+    tileClass: "bg-gradient-to-br from-slate-950 via-slate-800 to-indigo-950",
   },
 ];
 
@@ -210,13 +205,13 @@ export function StartProjectPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverPreviewUrlRef = useRef<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<NewProjectFormErrors>({});
   const [draftReady, setDraftReady] = useState(false);
   const [resumeMessage, setResumeMessage] = useState<string | null>(null);
-  const [signedInAs, setSignedInAs] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [values, setValues] = useState<NewProjectFormState>({
     title: "",
@@ -339,6 +334,7 @@ export function StartProjectPage() {
     if (Object.keys(nextErrors).length > 0) return;
 
     saveNewProjectDraft(values);
+    setSubmitError(null);
 
     const supabase = createSupabaseBrowserClient();
     const { data, error } = await supabase.auth.getUser();
@@ -347,63 +343,45 @@ export function StartProjectPage() {
       return;
     }
 
-    const metaName =
-      typeof data.user.user_metadata?.display_name === "string"
-        ? data.user.user_metadata.display_name
-        : null;
-    setSignedInAs(metaName || data.user.email || "Signed in");
+    setIsSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.set("title", values.title.trim());
+      fd.set("brief", values.brief.trim());
+      fd.set("slug", suggestedSlug);
+      fd.set("endsAt", values.endsAt);
+      fd.set("dimensionUnit", values.dimensionUnit);
+      fd.set("width", values.width.trim());
+      fd.set("length", values.length.trim());
+      fd.set("contentRating", values.contentRating ?? "");
+      fd.set("tags", JSON.stringify(parseTags(values.tagsInput)));
+      const categoryLabels = values.categories
+        .map((id) => PROJECT_CATEGORY_OPTIONS.find((o) => o.id === id)?.label)
+        .filter(Boolean) as string[];
+      fd.set("categories", JSON.stringify(categoryLabels));
+      const coverFallbackUrl = coverFile
+        ? ""
+        : (COVER_PICKER_PRESETS.find((p) => p.imageUrl === previewUrl)?.imageUrl ??
+            COVER_PICKER_PRESETS[0]?.imageUrl ??
+            "");
+      fd.set("coverFallback", coverFallbackUrl);
+      if (coverFile) {
+        fd.set("file", coverFile);
+      }
 
-    clearNewProjectDraft();
-    setSubmitted(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+      const res = await fetch("/api/projects", { method: "POST", body: fd });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; slug?: string; error?: string } | null;
+      if (!res.ok || !json?.ok || !json.slug) {
+        setSubmitError(json?.error || `Could not create project (${res.status})`);
+        return;
+      }
 
-  if (submitted) {
-    return (
-      <div className="bg-slate-50 py-10 sm:py-14">
-        <Container>
-          <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200/80">
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100">
-                <CheckCircle2 className="h-5 w-5" aria-hidden />
-              </span>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                  Nice—your brief is ready to review
-                </h1>
-                {signedInAs ? (
-                  <p className="mt-2 text-sm font-medium text-slate-700">Signed in as {signedInAs}.</p>
-                ) : null}
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  This MVP does not save projects to the server yet. When Supabase is connected,
-                  this flow will create your project and take you straight to your project page.
-                </p>
-                {suggestedSlug ? (
-                  <p className="mt-3 text-sm text-slate-600">
-                    Preview slug:{" "}
-                    <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-800">
-                      /projects/{suggestedSlug || "your-project"}
-                    </span>
-                  </p>
-                ) : null}
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <Button href="/browse" variant="primary" className="justify-center px-5 py-3">
-                    Browse projects
-                  </Button>
-                  <Button
-                    href="/projects/minimalist-topography-deskmat"
-                    variant="secondary"
-                    className="justify-center px-5 py-3"
-                  >
-                    View example project
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </div>
-    );
+      clearNewProjectDraft();
+      router.push(`/projects/${json.slug}`);
+      router.refresh();
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -437,7 +415,8 @@ export function StartProjectPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  className="shrink-0 px-3 py-2 text-xs"
+                  size="compact"
+                  className="shrink-0"
                   onClick={() => setResumeMessage(null)}
                 >
                   Dismiss
@@ -449,6 +428,11 @@ export function StartProjectPage() {
               className="space-y-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 sm:p-8"
               noValidate
             >
+              {submitError ? (
+                <p className="rounded-xl border border-red-200 bg-red-50/90 p-3 text-sm text-red-800" role="alert">
+                  {submitError}
+                </p>
+              ) : null}
               <section className="space-y-4" aria-labelledby="basics-heading">
                 <h2 id="basics-heading" className="text-lg font-semibold text-slate-900">
                   Basics
@@ -807,7 +791,13 @@ export function StartProjectPage() {
                               add drag-and-drop later
                             </p>
                           </div>
-                          <span className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-indigo-500/20 transition group-hover:bg-indigo-500">
+                          <span
+                            className={buttonSurfaceClasses({
+                              variant: "primary",
+                              size: "default",
+                              className: "pointer-events-none",
+                            })}
+                          >
                             <UploadCloud className="h-4 w-4" aria-hidden />
                             Choose cover image
                           </span>
@@ -820,10 +810,9 @@ export function StartProjectPage() {
                       <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
                         <p className="text-sm font-semibold text-slate-900">No image yet?</p>
                         <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                          Pick a starter cover—perfect for getting your project posted fast. You can
-                          always upload a custom cover later.
+                          Pick a starter cover—perfect for getting your project posted fast.
                         </p>
-                        <div className="mt-3 grid grid-cols-3 gap-2">
+                        <div className="mt-3 grid grid-cols-2 gap-2">
                           {COVER_PICKER_PRESETS.map((opt) => {
                             const active = previewUrl === opt.imageUrl && !coverFile;
                             return (
@@ -831,26 +820,20 @@ export function StartProjectPage() {
                                 key={opt.id}
                                 type="button"
                                 onClick={() => setCoverPreset(opt.imageUrl)}
-                                className={`group relative overflow-hidden rounded-xl bg-slate-100 shadow-sm ring-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+                                className={`group relative flex min-h-[5.25rem] items-center justify-center overflow-hidden rounded-xl p-3 text-center shadow-sm ring-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
                                   active
-                                    ? "ring-indigo-400"
-                                    : "ring-slate-200/80 hover:ring-slate-300"
-                                }`}
+                                    ? "ring-2 ring-indigo-500 ring-offset-2 ring-offset-white"
+                                    : "ring-slate-200/80 hover:brightness-[1.03] hover:ring-slate-300"
+                                } ${opt.tileClass}`}
                                 aria-pressed={active}
-                                title={opt.label}
+                                aria-label={opt.label}
                               >
-                                <div className="relative aspect-[4/3] w-full">
-                                  <Image
-                                    src={opt.imageUrl}
-                                    alt=""
-                                    fill
-                                    className="object-cover transition duration-300 group-hover:scale-[1.02]"
-                                    unoptimized
-                                  />
-                                </div>
+                                <span className="relative z-10 text-pretty text-sm font-semibold leading-snug text-white drop-shadow-md">
+                                  {opt.label}
+                                </span>
                                 {active ? (
-                                  <div
-                                    className="absolute inset-0 ring-inset ring-2 ring-indigo-500/40"
+                                  <span
+                                    className="pointer-events-none absolute inset-0 ring-2 ring-white/40 ring-inset"
                                     aria-hidden
                                   />
                                 ) : null}
@@ -917,15 +900,16 @@ export function StartProjectPage() {
                 <Button
                   type="submit"
                   variant="primary"
-                  className="w-full justify-center rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 text-base text-white shadow-lg shadow-indigo-600/20 hover:from-indigo-500 hover:to-violet-500"
+                  size="lg"
+                  disabled={isSubmitting}
+                  className="w-full justify-center"
                 >
                   <Sparkles className="h-4 w-4" aria-hidden />
-                  Submit project
+                  {isSubmitting ? "Publishing…" : "Submit project"}
                 </Button>
                 <p className="mt-3 text-center text-xs text-slate-500">
-                  Your answers save automatically in this browser while you work. You will be asked
-                  to log in or create a profile before the project is submitted—nothing is lost when
-                  you return. Supabase will replace this demo flow later.
+                  Your answers save automatically in this browser while you work. You must be logged in
+                  to publish; drafts stay in this browser until you submit.
                 </p>
               </div>
             </form>

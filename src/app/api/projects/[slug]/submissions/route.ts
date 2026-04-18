@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProjectBySlug } from "@/data/projects";
+import { loadProjectBySlug } from "@/lib/catalog/load";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/admin";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route";
 
@@ -11,7 +11,7 @@ const maxBytes = 10 * 1024 * 1024;
 export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
 
-  const project = getProjectBySlug(slug);
+  const project = await loadProjectBySlug(slug);
   if (!project) {
     return NextResponse.json({ ok: false, error: "Project not found" }, { status: 404 });
   }

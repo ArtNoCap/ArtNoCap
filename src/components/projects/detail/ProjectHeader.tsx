@@ -104,13 +104,14 @@ export function ProjectHeader({
             </div>
 
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
-              <Button type="button" variant="secondary" className="w-full justify-center px-4 py-2.5 sm:w-auto">
+              <Button type="button" variant="secondary" className="w-full justify-center sm:w-auto">
                 Share
               </Button>
               <Button
                 href={`/projects/${project.slug}/submit`}
                 variant="primary"
-                className="w-full justify-center rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-white shadow-lg shadow-indigo-600/20 hover:from-indigo-500 hover:to-violet-500 sm:w-auto"
+                size="lg"
+                className="w-full justify-center sm:w-auto"
               >
                 Submit Artwork
               </Button>

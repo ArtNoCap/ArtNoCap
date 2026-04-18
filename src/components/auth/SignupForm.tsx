@@ -155,7 +155,7 @@ export function SignupForm() {
               ArtNoCap terms and privacy policy (copy TBD).
             </span>
           </label>
-          <Button type="submit" variant="primary" className="w-full justify-center py-3" disabled={busy}>
+          <Button type="submit" variant="primary" size="lg" className="w-full justify-center" disabled={busy}>
             {busy ? "Creating account…" : "Create profile & continue"}
           </Button>
           <p className="text-center text-xs text-slate-500">

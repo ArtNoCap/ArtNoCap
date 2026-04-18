@@ -60,6 +60,7 @@ export function AudienceSection() {
                   <Button
                     href={card.button.href}
                     variant={card.button.variant}
+                    size="lg"
                     className="w-full justify-center sm:w-auto"
                   >
                     {card.button.label}

@@ -1,9 +1,9 @@
 import { Container } from "@/components/ui/Container";
 import { ProjectDetailView } from "@/components/projects/detail/ProjectDetailView";
-import { getArtistById } from "@/data/artists";
-import { getProjectBySlug } from "@/data/projects";
 import { getSubmissionsByProjectId } from "@/data/submissions";
 import type { SubmissionWithArtist } from "@/components/projects/detail/types";
+import { resolveCreatorsForProjects } from "@/lib/catalog/creators";
+import { loadProjectBySlug } from "@/lib/catalog/load";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/is-uuid";
 import type { Submission } from "@/types";
@@ -12,7 +12,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  return { title: `Project: ${slug}` };
+  const project = await loadProjectBySlug(slug);
+  return { title: project ? project.title : `Project: ${slug}` };
 }
 
 async function loadRemoteSubmissionsForProject(projectId: string): Promise<Submission[]> {
@@ -56,7 +57,7 @@ async function loadRemoteSubmissionsForProject(projectId: string): Promise<Submi
 
 export default async function ProjectDetailPlaceholderPage({ params }: Props) {
   const { slug } = await params;
-  const project = getProjectBySlug(slug);
+  const project = await loadProjectBySlug(slug);
   if (!project) {
     return (
       <div className="bg-slate-50 py-16">
@@ -64,20 +65,6 @@ export default async function ProjectDetailPlaceholderPage({ params }: Props) {
           <h1 className="text-3xl font-bold text-slate-900">Project not found</h1>
           <p className="mt-3 max-w-2xl text-slate-600">
             We couldn&apos;t find a project for <span className="font-mono text-sm">{slug}</span>.
-          </p>
-        </Container>
-      </div>
-    );
-  }
-
-  const creator = getArtistById(project.creatorId);
-  if (!creator) {
-    return (
-      <div className="bg-slate-50 py-16">
-        <Container>
-          <h1 className="text-3xl font-bold text-slate-900">Creator not found</h1>
-          <p className="mt-3 max-w-2xl text-slate-600">
-            The creator profile for this project is missing in mock data.
           </p>
         </Container>
       </div>
@@ -94,9 +81,28 @@ export default async function ProjectDetailPlaceholderPage({ params }: Props) {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
+  const creatorByKey = await resolveCreatorsForProjects([
+    { creatorId: project.creatorId },
+    ...merged.map((s) => ({ creatorId: s.artistId })),
+  ]);
+
+  const creator = creatorByKey.get(project.creatorId);
+  if (!creator) {
+    return (
+      <div className="bg-slate-50 py-16">
+        <Container>
+          <h1 className="text-3xl font-bold text-slate-900">Creator not found</h1>
+          <p className="mt-3 max-w-2xl text-slate-600">
+            The creator profile for this project is missing from the catalog.
+          </p>
+        </Container>
+      </div>
+    );
+  }
+
   const withArtists: SubmissionWithArtist[] = merged
     .map((s) => {
-      const artist = getArtistById(s.artistId);
+      const artist = creatorByKey.get(s.artistId);
       if (!artist) {
         if (!isUuid(s.id)) return null;
         return {
@@ -122,28 +128,44 @@ export default async function ProjectDetailPlaceholderPage({ params }: Props) {
     .filter(Boolean) as SubmissionWithArtist[];
 
   let favoritedSubmissionIds: string[] = [];
+  let myVoteSubmissionId: string | null = null;
+
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     try {
       const supabase = await createSupabaseServerClient();
-      if (!supabase) {
-        favoritedSubmissionIds = [];
-      } else {
-        favoritedSubmissionIds = [];
+      if (supabase) {
         const { data: userData } = await supabase.auth.getUser();
+        const user = userData.user;
         const uuidIds = withArtists.map((s) => s.id).filter(isUuid);
-        if (userData.user && uuidIds.length > 0) {
+        if (user && uuidIds.length > 0) {
           const fav = await supabase.from("favorite_submissions").select("submission_id").in("submission_id", uuidIds);
           if (!fav.error) {
             favoritedSubmissionIds = (fav.data ?? []).map((r) => String(r.submission_id)).filter(Boolean);
           }
         }
+
+        if (user) {
+          const v = await supabase
+            .from("votes")
+            .select("submission_id")
+            .eq("project_id", project.id)
+            .maybeSingle();
+          if (!v.error && v.data?.submission_id) {
+            myVoteSubmissionId = String(v.data.submission_id);
+          }
+        }
       }
     } catch {
       favoritedSubmissionIds = [];
+      myVoteSubmissionId = null;
     }
   }
 
   return (
-    <ProjectDetailView model={{ project, creator, submissions: withArtists }} favoritedSubmissionIds={favoritedSubmissionIds} />
+    <ProjectDetailView
+      model={{ project, creator, submissions: withArtists }}
+      favoritedSubmissionIds={favoritedSubmissionIds}
+      initialMyVoteSubmissionId={myVoteSubmissionId}
+    />
   );
 }

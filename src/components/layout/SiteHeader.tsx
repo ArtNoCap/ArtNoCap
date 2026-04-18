@@ -63,7 +63,7 @@ export function SiteHeader({
               >
                 Log in
               </Button>
-              <Button href={`/signup?returnTo=${returnTo}`} variant="primary" className="px-4 py-2 text-sm">
+              <Button href={`/signup?returnTo=${returnTo}`} variant="primary">
                 Sign up
               </Button>
             </>

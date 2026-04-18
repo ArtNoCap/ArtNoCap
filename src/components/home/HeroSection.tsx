@@ -44,11 +44,11 @@ export function HeroSection() {
               favorite.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button href="/projects/new" variant="primary" className="px-5 py-3 text-base">
+              <Button href="/projects/new" variant="primary" size="lg">
                 Start a Project
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
-              <Button href="/browse" variant="secondary" className="px-5 py-3 text-base">
+              <Button href="/browse" variant="secondary" size="lg">
                 Browse Projects
               </Button>
             </div>
