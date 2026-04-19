@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { LogOut, UserRound } from "lucide-react";
@@ -72,18 +73,15 @@ export function HeaderUserMenu({
             <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
             {email ? <p className="truncate text-xs text-slate-500">{email}</p> : null}
           </div>
-          <button
-            type="button"
+          <Link
+            href="/profile"
             role="menuitem"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            onClick={() => {
-              setOpen(false);
-              router.push("/browse");
-            }}
+            onClick={() => setOpen(false)}
           >
             <UserRound className="h-4 w-4" aria-hidden />
-            Profile (soon)
-          </button>
+            Profile
+          </Link>
           <button
             type="button"
             role="menuitem"
