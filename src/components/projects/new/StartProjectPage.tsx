@@ -107,10 +107,10 @@ function dimensionUnitWord(unit: DimensionUnit): string {
   return "inches";
 }
 
-function dimensionPlaceholders(unit: DimensionUnit): { width: string; length: string } {
-  if (unit === "px") return { width: "1920", length: "1080" };
-  if (unit === "in") return { width: "35.4", length: "15.7" };
-  return { width: "900", length: "400" };
+function dimensionPlaceholders(unit: DimensionUnit): { width: string; height: string } {
+  if (unit === "px") return { width: "1920", height: "1080" };
+  if (unit === "in") return { width: "35.4", height: "15.7" };
+  return { width: "900", height: "400" };
 }
 
 function dimensionsHint(unit: DimensionUnit): string {
@@ -156,13 +156,13 @@ function validate(values: NewProjectFormState, coverFile: File | null): NewProje
     errors.width = "Required.";
   }
   if (!l) {
-    errors.length = "Required.";
+    errors.length = "Height is required.";
   }
   if (w && l) {
     const wn = Number(w);
     const ln = Number(l);
     if (!Number.isFinite(wn) || !Number.isFinite(ln) || wn <= 0 || ln <= 0) {
-      errors.dimensions = `Use positive numbers for width and length (${dimensionUnitWord(values.dimensionUnit)}).`;
+      errors.dimensions = `Use positive numbers for width and height (${dimensionUnitWord(values.dimensionUnit)}).`;
     }
   }
 
@@ -515,31 +515,31 @@ export function StartProjectPage() {
                       ) : null}
                     </div>
                     <div>
-                      <label htmlFor="length" className="text-xs font-medium text-slate-600">
-                        Length ({unitAbbr}) <span className="text-red-600">*</span>
+                      <label htmlFor="project-height" className="text-xs font-medium text-slate-600">
+                        Height ({unitAbbr}) <span className="text-red-600">*</span>
                       </label>
                       <input
-                        id="length"
+                        id="project-height"
                         name="length"
                         type="text"
                         inputMode="decimal"
                         autoComplete="off"
                         required
-                        placeholder={placeholders.length}
+                        placeholder={placeholders.height}
                         value={values.length}
                         onChange={(e) => setValues((v) => ({ ...v, length: e.target.value }))}
                         className={`${inputClass} mt-1.5`}
                         aria-invalid={Boolean(errors.length || errors.dimensions)}
                         aria-describedby={[
                           "dimensions-hint",
-                          errors.length ? "length-error" : "",
+                          errors.length ? "height-error" : "",
                           errors.dimensions ? "dimensions-error" : "",
                         ]
                           .filter(Boolean)
                           .join(" ")}
                       />
                       {errors.length ? (
-                        <p id="length-error" className="mt-1.5 text-sm text-red-600" role="alert">
+                        <p id="height-error" className="mt-1.5 text-sm text-red-600" role="alert">
                           {errors.length}
                         </p>
                       ) : null}
@@ -836,7 +836,7 @@ export function StartProjectPage() {
               <ul className="mt-4 space-y-3 text-sm text-slate-600">
                 <li className="flex gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
-                  Pick the right unit (px, mm, or in)—width and length must match how you will judge
+                  Pick the right unit (px, mm, or in)—width and height must match how you will judge
                   submissions.
                 </li>
                 <li className="flex gap-2">

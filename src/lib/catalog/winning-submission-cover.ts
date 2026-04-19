@@ -56,7 +56,8 @@ export async function fetchWinningSubmissionCoverUrlByProjectId(
   const { data, error } = await supabase
     .from("submissions")
     .select("project_id, public_url, vote_count, created_at")
-    .in("project_id", projectIds);
+    .in("project_id", projectIds)
+    .is("archived_at", null);
   if (error || !data?.length) return new Map();
   const parsed: SubmissionCoverPickRow[] = [];
   for (const raw of data) {

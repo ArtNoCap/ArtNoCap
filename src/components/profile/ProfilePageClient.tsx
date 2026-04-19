@@ -74,6 +74,8 @@ export function ProfilePageClient({
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [showSignInEmail, setShowSignInEmail] = useState(false);
+  const [archivingSlug, setArchivingSlug] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   useEffect(() => {
     setDisplayName(initialProfile.displayName);
@@ -91,6 +93,30 @@ export function ProfilePageClient({
 
   const avatarDicebearSeed = encodeURIComponent(initialProfile.id || displayName || "user");
   const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarDicebearSeed}`;
+
+  const removeProjectFromSite = useCallback(
+    async (p: ProfileProjectSummary) => {
+      if (!p.canRemoveFromSite) return;
+      const confirmed = window.confirm(
+        `Remove “${p.title}” from ArtNoCap? It will disappear from Browse and the project page. Submissions stay in the archive for a future searchable library.`,
+      );
+      if (!confirmed) return;
+      setArchiveError(null);
+      setArchivingSlug(p.slug);
+      try {
+        const res = await fetch(`/api/projects/${encodeURIComponent(p.slug)}/archive`, { method: "POST" });
+        const json = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+        if (!res.ok || !json?.ok) {
+          setArchiveError(json?.error || `Could not remove project (${res.status}).`);
+          return;
+        }
+        router.refresh();
+      } finally {
+        setArchivingSlug(null);
+      }
+    },
+    [router],
+  );
 
   const onSaveProfile = useCallback(async () => {
     setSaveState("saving");
@@ -342,7 +368,15 @@ export function ProfilePageClient({
           <div className="space-y-10 lg:col-span-7">
             <section>
               <h2 className="text-lg font-semibold text-slate-900">Your projects</h2>
-              <p className="mt-1 text-sm text-slate-600">Briefs you started.</p>
+              <p className="mt-1 text-sm text-slate-600">
+                Briefs you started. For projects that are still open, you can remove them from the site;
+                submissions are kept with an archive stamp for a future searchable artwork library.
+              </p>
+              {archiveError ? (
+                <p className="mt-3 text-sm text-red-600" role="alert">
+                  {archiveError}
+                </p>
+              ) : null}
               {myProjects.length === 0 ? (
                 <p className="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/80 p-6 text-sm text-slate-600">
                   No projects yet.{" "}
@@ -354,8 +388,21 @@ export function ProfilePageClient({
               ) : (
                 <ul className="mt-4 space-y-3">
                   {myProjects.map((p) => (
-                    <li key={p.id}>
-                      <ProjectMiniCard p={p} />
+                    <li key={p.id} className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                      <div className="min-w-0 flex-1">
+                        <ProjectMiniCard p={p} />
+                      </div>
+                      {p.canRemoveFromSite ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="h-fit shrink-0 self-start sm:self-center"
+                          disabled={archivingSlug === p.slug}
+                          onClick={() => void removeProjectFromSite(p)}
+                        >
+                          {archivingSlug === p.slug ? "Removing…" : "Remove from site"}
+                        </Button>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

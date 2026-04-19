@@ -8,7 +8,11 @@ import {
 } from "@/lib/catalog/winning-submission-cover";
 
 export async function fetchProjectsFromSupabase(supabase: SupabaseClient): Promise<Project[]> {
-  const { data, error } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .is("archived_at", null)
+    .order("created_at", { ascending: false });
   if (error || !data) return [];
   const projects = data.map((r) => mapDbProject(r as Record<string, unknown>));
   if (projects.length === 0) return projects;
@@ -23,7 +27,12 @@ export async function fetchProjectBySlugFromSupabase(
   supabase: SupabaseClient,
   slug: string,
 ): Promise<Project | null> {
-  const { data, error } = await supabase.from("projects").select("*").eq("slug", slug).maybeSingle();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("slug", slug)
+    .is("archived_at", null)
+    .maybeSingle();
   if (error || !data) return null;
   const project = mapDbProject(data as Record<string, unknown>);
   const urlById = await fetchWinningSubmissionCoverUrlByProjectId(supabase, [project.id]);

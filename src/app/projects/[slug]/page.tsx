@@ -29,6 +29,7 @@ async function loadRemoteSubmissionsForProject(projectId: string): Promise<Submi
       .from("submissions")
       .select("id,project_id,public_url,vote_count,created_at,user_id")
       .eq("project_id", projectId)
+      .is("archived_at", null)
       .order("created_at", { ascending: false });
 
     if (q.error) return [];

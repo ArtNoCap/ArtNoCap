@@ -21,13 +21,16 @@ export const metadata: Metadata = {
   description: "Edit your ArtNoCap profile, avatar, and bio. View your projects, submissions, and saved favorites.",
 };
 
-function mapProjectRow(r: Record<string, unknown>): ProfileProjectSummary {
+function mapProjectRow(r: Record<string, unknown>, now: Date): ProfileProjectSummary {
+  const endsAt = new Date(String(r.ends_at)).toISOString();
+  const canRemoveFromSite = new Date(String(r.ends_at)).getTime() > now.getTime();
   return {
     id: String(r.id),
     slug: String(r.slug),
     title: String(r.title),
     coverImageUrl: String(r.cover_image_url),
-    endsAt: new Date(String(r.ends_at)).toISOString(),
+    endsAt,
+    canRemoveFromSite,
   };
 }
 
@@ -74,15 +77,17 @@ export default async function ProfilePage() {
   }
 
   const profile = mapProfileFromDb(row as Record<string, unknown>);
+  const now = new Date();
 
   const { data: projRows } = await supabase
     .from("projects")
     .select("id, slug, title, cover_image_url, ends_at")
     .eq("creator_user_id", userId)
+    .is("archived_at", null)
     .order("created_at", { ascending: false });
 
   let myProjects: ProfileProjectSummary[] = (projRows ?? []).map((r) =>
-    mapProjectRow(r as Record<string, unknown>),
+    mapProjectRow(r as Record<string, unknown>, now),
   );
   if (myProjects.length > 0) {
     const covers = await fetchWinningSubmissionCoverUrlByProjectId(
@@ -96,6 +101,7 @@ export default async function ProfilePage() {
     .from("submissions")
     .select("id, project_id, project_slug, public_url, created_at")
     .eq("user_id", userId)
+    .is("archived_at", null)
     .order("created_at", { ascending: false });
 
   const mySubmissions: ProfileSubmissionSummary[] = (subRows ?? []).map((r) => {
@@ -117,8 +123,9 @@ export default async function ProfilePage() {
     const { data: fp } = await supabase
       .from("projects")
       .select("id, slug, title, cover_image_url, ends_at")
-      .in("id", favProjectIds);
-    favoriteProjects = (fp ?? []).map((r) => mapProjectRow(r as Record<string, unknown>));
+      .in("id", favProjectIds)
+      .is("archived_at", null);
+    favoriteProjects = (fp ?? []).map((r) => mapProjectRow(r as Record<string, unknown>, now));
     const favCovers = await fetchWinningSubmissionCoverUrlByProjectId(
       supabase,
       favoriteProjects.map((p) => p.id),
@@ -137,7 +144,8 @@ export default async function ProfilePage() {
     const { data: fs } = await supabase
       .from("submissions")
       .select("id, project_slug, public_url")
-      .in("id", favSubIds);
+      .in("id", favSubIds)
+      .is("archived_at", null);
     favoriteSubmissions = (fs ?? []).map((r) => {
       const rec = r as Record<string, unknown>;
       return {

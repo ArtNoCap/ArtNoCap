@@ -1,7 +1,7 @@
 import type { ContentRatingId } from "@/data/content-ratings";
 import type { ProjectCategoryOptionId } from "@/data/project-form";
 
-/** Unit for width × length fields on the new project form */
+/** Unit for width × height fields on the new project form (stored as `length` in API for compatibility). */
 export type DimensionUnit = "mm" | "px" | "in";
 
 export interface NewProjectFormState {

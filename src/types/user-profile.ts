@@ -15,6 +15,8 @@ export interface ProfileProjectSummary {
   title: string;
   coverImageUrl: string;
   endsAt: string;
+  /** Deadline still in the future — creator may remove the project from the public site. */
+  canRemoveFromSite: boolean;
 }
 
 export interface ProfileSubmissionSummary {

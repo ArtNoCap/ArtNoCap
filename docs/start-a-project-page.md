@@ -70,7 +70,7 @@ Sections inside the form (top to bottom):
   - Legend: “Dimensions *”
   - Dynamic hint text by unit (mm / px / in).
   - **Unit of measurement** — Horizontal **radio group** (Millimeters, Pixels, Inches) as pill-style labels.
-  - **Width / Length** — Two-column grid on `sm+` (`sm:grid-cols-2`); labels include current unit abbreviation; placeholders change by unit; numeric validation with shared “dimensions” error when invalid.
+  - **Width / Height** — Two-column grid on `sm+` (`sm:grid-cols-2`); labels include current unit abbreviation; placeholders change by unit; numeric validation with shared “dimensions” error when invalid.
 - **Content Level** (`<fieldset>`) — Separated by `border-t` on the section; required **radio group** of three cards (`CONTENT_RATING_OPTIONS`): Standard, Expressive, Unrestricted. Grid: one column on small screens, **three columns** from `md` (`md:grid-cols-3`). Each option is a bordered card with radio + title + description line.
 
 #### 2. “Tags & categories” (`<section>` with top border)

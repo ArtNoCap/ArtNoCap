@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
   }
 
   const endsIso = new Date(`${endsAt}T23:59:59.000Z`).toISOString();
-  const detailsHtml = `<p><strong>Print size</strong>: ${escapeHtml(width)} × ${escapeHtml(length)} ${escapeHtml(dimensionUnit)}</p><p>${escapeHtml(brief)}</p>`;
+  const detailsHtml = `<p><strong>Print size (width × height)</strong>: ${escapeHtml(width)} × ${escapeHtml(length)} ${escapeHtml(dimensionUnit)}</p><p>${escapeHtml(brief)}</p>`;
 
   let slug = baseSlug;
   for (let attempt = 0; attempt < 8; attempt++) {
