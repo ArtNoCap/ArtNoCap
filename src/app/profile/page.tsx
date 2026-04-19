@@ -4,6 +4,10 @@ import { ProfilePageClient } from "@/components/profile/ProfilePageClient";
 import { Container } from "@/components/ui/Container";
 import { mapProfileFromDb } from "@/lib/profile-map";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  fetchWinningSubmissionCoverUrlByProjectId,
+  overlayWinningSubmissionCovers,
+} from "@/lib/catalog/winning-submission-cover";
 import type {
   ProfileProjectSummary,
   ProfileSavedSubmissionSummary,
@@ -77,9 +81,16 @@ export default async function ProfilePage() {
     .eq("creator_user_id", userId)
     .order("created_at", { ascending: false });
 
-  const myProjects: ProfileProjectSummary[] = (projRows ?? []).map((r) =>
+  let myProjects: ProfileProjectSummary[] = (projRows ?? []).map((r) =>
     mapProjectRow(r as Record<string, unknown>),
   );
+  if (myProjects.length > 0) {
+    const covers = await fetchWinningSubmissionCoverUrlByProjectId(
+      supabase,
+      myProjects.map((p) => p.id),
+    );
+    myProjects = overlayWinningSubmissionCovers(myProjects, covers);
+  }
 
   const { data: subRows } = await supabase
     .from("submissions")
@@ -108,6 +119,11 @@ export default async function ProfilePage() {
       .select("id, slug, title, cover_image_url, ends_at")
       .in("id", favProjectIds);
     favoriteProjects = (fp ?? []).map((r) => mapProjectRow(r as Record<string, unknown>));
+    const favCovers = await fetchWinningSubmissionCoverUrlByProjectId(
+      supabase,
+      favoriteProjects.map((p) => p.id),
+    );
+    favoriteProjects = overlayWinningSubmissionCovers(favoriteProjects, favCovers);
   }
 
   const { data: favSRows } = await supabase

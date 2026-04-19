@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, ArrowRight } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { ProjectHeader } from "@/components/projects/detail/ProjectHeader";
@@ -170,27 +170,17 @@ export function ProjectDetailView({
               )}
 
               <section className="rounded-2xl bg-indigo-50/90 px-6 py-6 ring-1 ring-indigo-100 sm:px-8">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
-                      <ShieldCheck className="h-5 w-5" aria-hidden />
-                    </span>
-                    <div>
-                      <h2 className="text-base font-semibold text-slate-900">How voting works</h2>
-                      <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-                        Vote for your favorite submission. You can change your vote until the project ends.
-                        Logged-in users get one vote per project on real submissions; demo submissions stay
-                        on-device only.
-                      </p>
-                    </div>
+                <div className="flex gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
+                    <ShieldCheck className="h-5 w-5" aria-hidden />
+                  </span>
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900">How voting works</h2>
+                    <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
+                      Vote for your favorite submission. You can change your vote until the project ends.
+                      Logged-in users get one vote per project.
+                    </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="inline-flex items-center gap-2 self-start text-indigo-700 sm:self-auto"
-                  >
-                    Learn more <ArrowRight className="h-4 w-4" aria-hidden />
-                  </Button>
                 </div>
               </section>
             </div>

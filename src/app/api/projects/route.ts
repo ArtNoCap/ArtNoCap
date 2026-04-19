@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/admin";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route";
 import { loadProjectsForApp } from "@/lib/catalog/load";
 import { isContentRatingId } from "@/data/content-ratings";
+import { generateProjectPlaceholderCoverPng } from "@/lib/projects/placeholder-cover";
 import { slugify } from "@/lib/slug";
 
 export const runtime = "nodejs";
@@ -41,7 +42,6 @@ export async function POST(req: NextRequest) {
   const width = String(form.get("width") || "").trim();
   const length = String(form.get("length") || "").trim();
   const contentRatingRaw = String(form.get("contentRating") || "").trim();
-  const coverFallback = String(form.get("coverFallback") || "").trim();
   const file = form.get("file");
 
   if (title.length < 3) {
@@ -73,17 +73,21 @@ export async function POST(req: NextRequest) {
   let baseSlug = slugRaw ? slugify(slugRaw) : slugify(title);
   if (baseSlug.length < 2) baseSlug = `project-${crypto.randomUUID().slice(0, 8)}`;
 
-  let publicUrl = coverFallback;
-  if (!(file instanceof File) || file.size <= 0) {
-    if (!publicUrl.startsWith("http")) {
-      return NextResponse.json({ ok: false, error: "Add a cover image or a valid cover URL" }, { status: 400 });
-    }
-  } else {
+  let admin;
+  try {
+    admin = createSupabaseServiceRoleClient();
+  } catch {
+    return NextResponse.json({ ok: false, error: "Server storage is not configured" }, { status: 501 });
+  }
+
+  let publicUrl: string;
+
+  if (file instanceof File && file.size > 0) {
     if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ ok: false, error: "Cover must be an image" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "File must be an image" }, { status: 400 });
     }
     if (file.size > maxBytes) {
-      return NextResponse.json({ ok: false, error: "Cover must be 10MB or smaller" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "Image must be 10MB or smaller" }, { status: 400 });
     }
     const ext =
       file.type === "image/png"
@@ -94,20 +98,32 @@ export async function POST(req: NextRequest) {
             ? "jpg"
             : null;
     if (!ext) {
-      return NextResponse.json({ ok: false, error: "Cover must be PNG, JPG, or WEBP" }, { status: 400 });
-    }
-
-    let admin;
-    try {
-      admin = createSupabaseServiceRoleClient();
-    } catch {
-      return NextResponse.json({ ok: false, error: "Server storage is not configured" }, { status: 501 });
+      return NextResponse.json({ ok: false, error: "Use PNG, JPG, or WEBP" }, { status: 400 });
     }
 
     const objectPath = `project-covers/${userId}/${crypto.randomUUID()}.${ext}`;
     const bytes = Buffer.from(await file.arrayBuffer());
     const upload = await admin.storage.from(bucket).upload(objectPath, bytes, {
       contentType: file.type,
+      upsert: false,
+      cacheControl: "3600",
+    });
+    if (upload.error) {
+      return NextResponse.json({ ok: false, error: upload.error.message }, { status: 400 });
+    }
+    const { data: pub } = admin.storage.from(bucket).getPublicUrl(objectPath);
+    publicUrl = pub.publicUrl;
+  } else {
+    let png: ArrayBuffer;
+    try {
+      png = await generateProjectPlaceholderCoverPng({ title, categories });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Cover generation failed";
+      return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    }
+    const objectPath = `project-covers/${userId}/${crypto.randomUUID()}.png`;
+    const upload = await admin.storage.from(bucket).upload(objectPath, Buffer.from(png), {
+      contentType: "image/png",
       upsert: false,
       cacheControl: "3600",
     });

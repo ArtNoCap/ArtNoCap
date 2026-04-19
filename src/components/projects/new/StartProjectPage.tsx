@@ -73,34 +73,6 @@ const labelClass = "block text-sm font-semibold text-slate-900";
 
 const maxCoverBytes = 10 * 1024 * 1024;
 
-/** Starter covers: UI is text + gradient; `imageUrl` is the fallback asset stored for the project. */
-const COVER_PICKER_PRESETS: { id: string; label: string; imageUrl: string; tileClass: string }[] = [
-  {
-    id: "surprise-me",
-    label: "Surprise me",
-    imageUrl: "https://images.unsplash.com/photo-1557672172-298e0d96a2b2?w=800&h=500&fit=crop",
-    tileClass: "bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-400",
-  },
-  {
-    id: "make-it-weird",
-    label: "Make it Weird",
-    imageUrl: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800&h=500&fit=crop",
-    tileClass: "bg-gradient-to-br from-lime-400 via-fuchsia-600 to-cyan-400",
-  },
-  {
-    id: "anime-like",
-    label: "Anime Like",
-    imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=500&fit=crop",
-    tileClass: "bg-gradient-to-br from-pink-400 via-purple-500 to-sky-400",
-  },
-  {
-    id: "dark-noir",
-    label: "Dark and Noir",
-    imageUrl: "https://images.unsplash.com/photo-1519501025264-65eca15dcd58?w=800&h=500&fit=crop",
-    tileClass: "bg-gradient-to-br from-slate-950 via-slate-800 to-indigo-950",
-  },
-];
-
 function formatDateInputValue(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -175,7 +147,7 @@ function validate(values: NewProjectFormState, coverFile: File | null): NewProje
     errors.rights = "Please confirm you understand how submissions and usage work.";
   }
   if (coverFile && coverFile.size > maxCoverBytes) {
-    errors.cover = "Cover image must be 10MB or smaller.";
+    errors.cover = "Mood board / reference images must be 10MB or smaller.";
   }
 
   const w = values.width.trim();
@@ -250,7 +222,7 @@ export function StartProjectPage() {
         "You're signed in — your answers are still here. Review the form and tap Submit project when you're ready.";
     } else if (saved) {
       message =
-        "We restored your saved answers from this browser. Cover images are not stored yet—re-attach one if you had picked a file.";
+        "We restored your saved answers from this browser. Mood board / reference images are not stored in drafts yet—re-attach if you had picked a file.";
     }
     startTransition(() => {
       if (saved) setValues(saved);
@@ -278,21 +250,6 @@ export function StartProjectPage() {
     const url = URL.createObjectURL(file);
     coverPreviewUrlRef.current = url;
     setPreviewUrl(url);
-  }
-
-  function setCoverPreset(url: string) {
-    if (coverPreviewUrlRef.current) {
-      URL.revokeObjectURL(coverPreviewUrlRef.current);
-      coverPreviewUrlRef.current = null;
-    }
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setCoverFile(null);
-    setPreviewUrl(url);
-    setErrors((e) => {
-      const next = { ...e };
-      delete next.cover;
-      return next;
-    });
   }
 
   function toggleCategory(id: (typeof PROJECT_CATEGORY_OPTIONS)[number]["id"]) {
@@ -359,12 +316,6 @@ export function StartProjectPage() {
         .map((id) => PROJECT_CATEGORY_OPTIONS.find((o) => o.id === id)?.label)
         .filter(Boolean) as string[];
       fd.set("categories", JSON.stringify(categoryLabels));
-      const coverFallbackUrl = coverFile
-        ? ""
-        : (COVER_PICKER_PRESETS.find((p) => p.imageUrl === previewUrl)?.imageUrl ??
-            COVER_PICKER_PRESETS[0]?.imageUrl ??
-            "");
-      fd.set("coverFallback", coverFallbackUrl);
       if (coverFile) {
         fd.set("file", coverFile);
       }
@@ -705,7 +656,7 @@ export function StartProjectPage() {
 
               <section className="space-y-4 border-t border-slate-100 pt-6" aria-labelledby="timeline-heading">
                 <h2 id="timeline-heading" className="text-lg font-semibold text-slate-900">
-                  Timeline & cover
+                  Timeline & mood board
                 </h2>
                 <div>
                   <label htmlFor="endsAt" className={labelClass}>
@@ -733,9 +684,12 @@ export function StartProjectPage() {
                 </div>
 
                 <div>
-                  <p className={labelClass}>Cover image (optional)</p>
+                  <p className={labelClass}>
+                    Mood board / example of style <span className="font-normal text-slate-500">(optional)</span>
+                  </p>
                   <p id="cover-hint" className="mt-1 text-xs text-slate-500">
-                    PNG, JPG, or WEBP up to 10MB. This becomes the project card image.
+                    PNG, JPG, or WEBP up to 10MB. Share palette, references, or collage—this appears on your
+                    project card so creators quickly see the vibe.
                   </p>
                   <input
                     ref={fileInputRef}
@@ -749,119 +703,77 @@ export function StartProjectPage() {
                       {errors.cover}
                     </p>
                   ) : null}
-                  <div className="mt-4 grid gap-4 lg:grid-cols-12 lg:items-start">
+                  <div className="mt-4">
                     <button
                       type="button"
                       onClick={onPickFile}
                       aria-describedby="cover-hint"
-                      className="group w-full overflow-hidden rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 text-left shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 lg:col-span-7"
+                      className="group w-full overflow-hidden rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 text-left shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                     >
                       <div className="relative aspect-[4/3] w-full bg-slate-100">
-                      {previewUrl ? (
-                        <>
-                          <Image
-                            src={previewUrl}
-                            alt="Cover preview"
-                            fill
-                            className="object-contain"
-                            unoptimized
-                          />
-                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/40 to-transparent p-4">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-                                <UploadCloud className="h-4 w-4" aria-hidden />
-                                Change cover image
-                              </span>
-                              <span className="text-xs font-medium text-white/80">
-                                Click to replace (PNG/JPG/WEBP, max 10MB)
-                              </span>
+                        {previewUrl ? (
+                          <>
+                            <Image
+                              src={previewUrl}
+                              alt="Mood board preview"
+                              fill
+                              className="object-contain"
+                              unoptimized
+                            />
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/40 to-transparent p-4">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                                  <UploadCloud className="h-4 w-4" aria-hidden />
+                                  Change mood board image
+                                </span>
+                                <span className="text-xs font-medium text-white/80">
+                                  Click to replace (PNG/JPG/WEBP, max 10MB)
+                                </span>
+                              </div>
                             </div>
+                          </>
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
+                            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-indigo-700 shadow-sm ring-1 ring-indigo-100 transition group-hover:scale-[1.02]">
+                              <ImageIcon className="h-6 w-6" aria-hidden />
+                            </span>
+                            <div>
+                              <p className="text-base font-bold text-slate-900">Add mood board or references</p>
+                              <p className="mt-1 text-sm text-slate-600">Click to upload an image from your device.</p>
+                            </div>
+                            <span
+                              className={buttonSurfaceClasses({
+                                variant: "primary",
+                                size: "default",
+                                className: "pointer-events-none",
+                              })}
+                            >
+                              <UploadCloud className="h-4 w-4" aria-hidden />
+                              Choose images
+                            </span>
                           </div>
-                        </>
-                      ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
-                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-indigo-700 shadow-sm ring-1 ring-indigo-100 transition group-hover:scale-[1.02]">
-                            <ImageIcon className="h-6 w-6" aria-hidden />
-                          </span>
-                          <div>
-                            <p className="text-base font-bold text-slate-900">Add a cover image</p>
-                            <p className="mt-1 text-sm text-slate-600">
-                              Click to upload{" "}
-                              <span className="font-semibold text-slate-800">or</span>{" "}
-                              add drag-and-drop later
-                            </p>
-                          </div>
-                          <span
-                            className={buttonSurfaceClasses({
-                              variant: "primary",
-                              size: "default",
-                              className: "pointer-events-none",
-                            })}
-                          >
-                            <UploadCloud className="h-4 w-4" aria-hidden />
-                            Choose cover image
-                          </span>
-                        </div>
-                      )}
+                        )}
                       </div>
                     </button>
 
-                    <div className="space-y-3 lg:col-span-5">
-                      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
-                        <p className="text-sm font-semibold text-slate-900">No image yet?</p>
-                        <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                          Pick a starter cover—perfect for getting your project posted fast.
+                    {previewUrl ? (
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-slate-500">
+                          Tip: A clear reference helps your project stand out on Browse.
                         </p>
-                        <div className="mt-3 grid grid-cols-2 gap-2">
-                          {COVER_PICKER_PRESETS.map((opt) => {
-                            const active = previewUrl === opt.imageUrl && !coverFile;
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => setCoverPreset(opt.imageUrl)}
-                                className={`group relative flex min-h-[5.25rem] items-center justify-center overflow-hidden rounded-xl p-3 text-center shadow-sm ring-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
-                                  active
-                                    ? "ring-2 ring-indigo-500 ring-offset-2 ring-offset-white"
-                                    : "ring-slate-200/80 hover:brightness-[1.03] hover:ring-slate-300"
-                                } ${opt.tileClass}`}
-                                aria-pressed={active}
-                                aria-label={opt.label}
-                              >
-                                <span className="relative z-10 text-pretty text-sm font-semibold leading-snug text-white drop-shadow-md">
-                                  {opt.label}
-                                </span>
-                                {active ? (
-                                  <span
-                                    className="pointer-events-none absolute inset-0 ring-2 ring-white/40 ring-inset"
-                                    aria-hidden
-                                  />
-                                ) : null}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="w-full justify-center px-3 py-2 text-xs sm:w-auto"
+                          onClick={() => {
+                            if (fileInputRef.current) fileInputRef.current.value = "";
+                            setCoverPreview(null);
+                          }}
+                        >
+                          Remove mood board
+                        </Button>
                       </div>
-
-                      {previewUrl ? (
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <p className="text-xs text-slate-500">
-                            Tip: A clear cover helps your project stand out on Browse.
-                          </p>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            className="w-full justify-center px-3 py-2 text-xs sm:w-auto"
-                            onClick={() => {
-                              if (fileInputRef.current) fileInputRef.current.value = "";
-                              setCoverPreview(null);
-                            }}
-                          >
-                            Remove cover
-                          </Button>
-                        </div>
-                      ) : null}
-                    </div>
+                    ) : null}
                   </div>
                 </div>
               </section>
