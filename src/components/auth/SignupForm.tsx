@@ -7,6 +7,7 @@ import { Container } from "@/components/ui/Container";
 import { AUTH_RETURN_FLASH_KEY } from "@/lib/auth-flash";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { safeReturnPath } from "@/lib/return-to";
+import { SIGNUP_PENDING_EMAIL_KEY } from "@/lib/signup-pending-email";
 
 export function SignupForm() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export function SignupForm() {
     setBusy(true);
     try {
       const supabase = createSupabaseBrowserClient();
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: e164,
         password,
         options: {
@@ -55,7 +56,18 @@ export function SignupForm() {
         setError(signUpError.message);
         return;
       }
+      // When email confirmation is enabled in Supabase, there is no session until the user verifies.
+      const session = data.session;
+      if (!session) {
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem(SIGNUP_PENDING_EMAIL_KEY, e164);
+        }
+        router.push(`/signup/check-email?returnTo=${encodeURIComponent(returnTo)}`);
+        router.refresh();
+        return;
+      }
       if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(SIGNUP_PENDING_EMAIL_KEY);
         window.sessionStorage.setItem(AUTH_RETURN_FLASH_KEY, "1");
       }
       router.push(returnTo);
@@ -70,8 +82,8 @@ export function SignupForm() {
       <Container className="max-w-md">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Create your profile</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Create an account with Supabase Auth (email + password). If email confirmation is enabled in
-          your Supabase project, check your inbox after signing up.
+          Create an account with email and password. If your project requires email confirmation,
+          we&apos;ll take you to a short screen after sign up so you know to check your inbox.
         </p>
         <form
           onSubmit={onSubmit}

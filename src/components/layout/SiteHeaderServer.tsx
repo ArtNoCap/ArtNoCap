@@ -16,7 +16,7 @@ export async function SiteHeaderServer() {
   if (user) {
     const metaName =
       typeof user.user_metadata?.display_name === "string" ? user.user_metadata.display_name : null;
-    displayName = metaName || user.email?.split("@")[0] || "Signed in";
+    displayName = metaName || "Signed in";
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -30,5 +30,9 @@ export async function SiteHeaderServer() {
 
   const safeDisplayName = displayName ?? "Signed in";
 
-  return <SiteHeader user={user ? { email: user.email, displayName: safeDisplayName, avatarUrl } : null} />;
+  return (
+    <SiteHeader
+      user={user ? { displayName: safeDisplayName, avatarUrl, avatarSeed: user.id } : null}
+    />
+  );
 }

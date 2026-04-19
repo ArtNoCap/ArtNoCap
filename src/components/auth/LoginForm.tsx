@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { AUTH_RETURN_FLASH_KEY } from "@/lib/auth-flash";
+import { SIGNUP_PENDING_EMAIL_KEY } from "@/lib/signup-pending-email";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { safeReturnPath } from "@/lib/return-to";
 
@@ -12,6 +13,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = safeReturnPath(searchParams.get("returnTo"), "/");
+  const callbackAuthFailed = searchParams.get("error") === "auth_callback_failed";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -38,6 +40,7 @@ export function LoginForm() {
         return;
       }
       if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(SIGNUP_PENDING_EMAIL_KEY);
         window.sessionStorage.setItem(AUTH_RETURN_FLASH_KEY, "1");
       }
       router.push(returnTo);
@@ -92,6 +95,24 @@ export function LoginForm() {
               aria-describedby={error ? "login-error" : undefined}
             />
           </div>
+          <div className="flex justify-end">
+            <a
+              href={`/forgot-password?returnTo=${encodeURIComponent(returnTo)}`}
+              className="text-sm font-semibold text-indigo-700 hover:text-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              Forgot password?
+            </a>
+          </div>
+
+          {callbackAuthFailed ? (
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-100" role="status">
+              That email link didn&apos;t work or expired. Try signing in below, or use{" "}
+              <a href={`/forgot-password?returnTo=${encodeURIComponent(returnTo)}`} className="font-semibold underline">
+                reset password
+              </a>
+              .
+            </p>
+          ) : null}
 
           {error ? (
             <p id="login-error" className="text-sm text-red-600" role="alert">

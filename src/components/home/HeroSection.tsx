@@ -1,48 +1,37 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Sparkles, Users } from "lucide-react";
-import { HeroTopoIllustration } from "@/components/home/HeroTopoIllustration";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 
 type CollagePhoto = {
   key: string;
-  kind: "photo";
   src: string;
   alt: string;
   className: string;
 };
 
-type CollageTopo = {
-  key: string;
-  kind: "topo";
-  className: string;
-};
-
-const collage: (CollagePhoto | CollageTopo)[] = [
+const collage: CollagePhoto[] = [
   {
     key: "mountain",
-    kind: "photo",
     src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=700&fit=crop",
     alt: "Mountain landscape artwork",
     className: "top-0 right-0 z-0 h-[46%] w-[58%]",
   },
   {
     key: "abstract",
-    kind: "photo",
     src: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=700&fit=crop",
     alt: "Abstract wave pattern",
     className: "bottom-8 left-0 z-10 h-[42%] w-[52%]",
   },
   {
-    key: "topo",
-    kind: "topo",
-    /* Above the large top-right photo so the lines stay visible */
+    key: "romantic-dinner",
+    src: "/images/hero-romantic-dinner.png",
+    alt: "Illustration of two people sharing a candlelit dinner on a balcony overlooking a city at night.",
     className: "top-[14%] left-[4%] z-30 h-[44%] w-[50%]",
   },
   {
     key: "space",
-    kind: "photo",
     src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=700&fit=crop",
     alt: "Futuristic space scene",
     className: "bottom-0 right-[6%] z-20 h-[44%] w-[56%]",
@@ -121,13 +110,7 @@ export function HeroSection() {
                     key={tile.key}
                     className={`absolute overflow-hidden rounded-2xl shadow-md ring-1 ring-slate-200/80 ${tile.className}`}
                   >
-                    {tile.kind === "photo" ? (
-                      <Image src={tile.src} alt={tile.alt} fill className="object-cover" sizes="400px" />
-                    ) : (
-                      <div className="relative h-full min-h-0 w-full bg-gradient-to-br from-indigo-50 via-white to-violet-50">
-                        <HeroTopoIllustration className="absolute inset-0 h-full w-full" />
-                      </div>
-                    )}
+                    <Image src={tile.src} alt={tile.alt} fill className="object-cover" sizes="400px" />
                   </div>
                 ))}
               </div>

@@ -1,0 +1,31 @@
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f8fafc;margin:0;padding:32px 12px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:480px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
+        <tr>
+          <td style="padding:28px 28px 8px 28px;">
+            <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#4f46e5;">ArtNoCap</p>
+            <h1 style="margin:12px 0 0 0;font-size:22px;line-height:1.25;color:#0f172a;">Confirm your email</h1>
+            <p style="margin:14px 0 0 0;font-size:15px;line-height:1.55;color:#475569;">
+              Thanks for creating a profile. Tap the button below to verify this address and finish setting up your account.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 28px 28px 28px;">
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 22px;border-radius:12px;border:1px solid #4338ca;">
+              Confirm email
+            </a>
+            <p style="margin:20px 0 0 0;font-size:13px;line-height:1.5;color:#64748b;">
+              If the button doesn’t work, paste this link into your browser:<br />
+              <span style="word-break:break-all;color:#334155;">{{ .ConfirmationURL }}</span>
+            </p>
+            <p style="margin:20px 0 0 0;font-size:12px;line-height:1.5;color:#94a3b8;">
+              If you didn’t sign up for ArtNoCap, you can ignore this message.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>

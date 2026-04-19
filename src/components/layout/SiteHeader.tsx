@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import type { User } from "@supabase/supabase-js";
 import { HeaderUserMenu } from "@/components/layout/HeaderUserMenu";
 
 const nav = [
@@ -18,7 +17,7 @@ const nav = [
 export function SiteHeader({
   user,
 }: {
-  user: { email: User["email"]; displayName: string; avatarUrl: string | null } | null;
+  user: { displayName: string; avatarUrl: string | null; avatarSeed: string } | null;
 }) {
   const pathname = usePathname() || "/";
   const returnTo = encodeURIComponent(pathname);
@@ -53,7 +52,11 @@ export function SiteHeader({
 
         <div className="flex items-center gap-2">
           {user ? (
-            <HeaderUserMenu email={user.email} displayName={user.displayName} avatarUrl={user.avatarUrl} />
+            <HeaderUserMenu
+              displayName={user.displayName}
+              avatarUrl={user.avatarUrl}
+              avatarSeed={user.avatarSeed}
+            />
           ) : (
             <>
               <Button

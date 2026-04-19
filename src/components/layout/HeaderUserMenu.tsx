@@ -3,27 +3,25 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { LogOut, UserRound } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function HeaderUserMenu({
-  email,
   displayName,
   avatarUrl,
+  avatarSeed,
 }: {
-  email: string | null | undefined;
   displayName: string;
   avatarUrl: string | null;
+  /** Stable, non-PII seed for default avatar (e.g. auth user id). */
+  avatarSeed: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const fallbackAvatar = useMemo(() => {
-    const seed = encodeURIComponent(displayName || email || "user");
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
-  }, [displayName, email]);
+  const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(avatarSeed)}`;
 
   async function onSignOut() {
     setBusy(true);
@@ -58,9 +56,6 @@ export function HeaderUserMenu({
         </span>
         <span className="min-w-0 max-w-[11rem]">
           <span className="block truncate text-left text-xs font-semibold text-slate-900">{displayName}</span>
-          {email ? (
-            <span className="block truncate text-left text-[11px] text-slate-500">{email}</span>
-          ) : null}
         </span>
       </button>
 
@@ -71,7 +66,6 @@ export function HeaderUserMenu({
         >
           <div className="border-b border-slate-100 px-3 py-2">
             <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
-            {email ? <p className="truncate text-xs text-slate-500">{email}</p> : null}
           </div>
           <Link
             href="/profile"

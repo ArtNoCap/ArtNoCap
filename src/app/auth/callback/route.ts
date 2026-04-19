@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { safeReturnPath } from "@/lib/return-to";
 
 export async function GET(req: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const requestUrl = new URL(req.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") || "/";
+  const next = safeReturnPath(requestUrl.searchParams.get("next"), "/");
 
   if (!code) {
     return NextResponse.redirect(new URL("/login", requestUrl.origin));

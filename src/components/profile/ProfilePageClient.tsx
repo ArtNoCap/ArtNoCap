@@ -73,6 +73,7 @@ export function ProfilePageClient({
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [showSignInEmail, setShowSignInEmail] = useState(false);
 
   useEffect(() => {
     setDisplayName(initialProfile.displayName);
@@ -88,8 +89,8 @@ export function ProfilePageClient({
     initialProfile.styleKeywords,
   ]);
 
-  const seed = encodeURIComponent(displayName || email || "user");
-  const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+  const avatarDicebearSeed = encodeURIComponent(initialProfile.id || displayName || "user");
+  const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarDicebearSeed}`;
 
   const onSaveProfile = useCallback(async () => {
     setSaveState("saving");
@@ -162,7 +163,34 @@ export function ProfilePageClient({
       <Container>
         <div className="mx-auto max-w-3xl">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Your profile</h1>
-          {email ? <p className="mt-1 text-sm text-slate-500">{email}</p> : null}
+          <p className="mt-2 text-sm text-slate-600">
+            Your sign-in email isn&apos;t shown here by default. Use the button below only if you need a
+            reminder—avoid sharing your screen while it&apos;s visible.
+          </p>
+          {email ? (
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="compact"
+                className="w-fit"
+                onClick={() => setShowSignInEmail((v) => !v)}
+                aria-expanded={showSignInEmail}
+                aria-controls="profile-signin-email"
+              >
+                {showSignInEmail ? "Hide sign-in email" : "Display sign-in email"}
+              </Button>
+              {showSignInEmail ? (
+                <output
+                  id="profile-signin-email"
+                  className="block rounded-lg bg-slate-100 px-3 py-2 font-mono text-sm text-slate-900 ring-1 ring-slate-200/80"
+                  aria-live="polite"
+                >
+                  {email}
+                </output>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="mx-auto mt-10 grid max-w-5xl gap-10 lg:grid-cols-12">
