@@ -31,7 +31,8 @@ export function CtaBannerSection() {
               </Button>
             </div>
             <p className="mt-4 text-xs text-indigo-200">
-              [Placeholder] Accounts will be powered by Supabase in a future milestone.
+              Free accounts use secure email sign-in (hosted on Supabase). We use your email only for
+              authentication and important notices—we do not sell personal data.
             </p>
           </div>
         </div>

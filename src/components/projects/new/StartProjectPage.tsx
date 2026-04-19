@@ -794,7 +794,7 @@ export function StartProjectPage() {
                     aria-describedby="rights-copy"
                   />
                   <span id="rights-copy">
-                    <span className="font-semibold text-slate-900">[Placeholder]</span> I confirm my
+                    <span className="font-semibold text-slate-900">Acknowledgment.</span> I confirm my
                     brief is accurate and lawful. I understand creators will upload original finished
                     artwork, and that selected work may be used in line with future ArtNoCap terms
                     (including broad usage rights granted by uploaders to project owners and the

@@ -11,6 +11,7 @@ const nav = [
   { href: "/browse", label: "Browse Projects" },
   { href: "/#how-it-works", label: "How It Works" },
   { href: "/community", label: "Community" },
+  { href: "/blog", label: "Journal" },
   { href: "/about", label: "About" },
 ];
 

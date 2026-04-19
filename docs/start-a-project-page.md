@@ -90,7 +90,7 @@ Sections inside the form (top to bottom):
 
 #### 4. “Legal & platform rules” (`<section>` with top border)
 
-- Single **required checkbox** with placeholder legal copy (rights, uploads, usage). Error if unchecked.
+- Single **required checkbox** with acknowledgment copy (brief accuracy, lawful content, usage rights). Error if unchecked.
 
 #### 5. Submit row
 

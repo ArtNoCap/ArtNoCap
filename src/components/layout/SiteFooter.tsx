@@ -19,15 +19,15 @@ const columns = [
       { href: "/browse", label: "Gallery" },
       { href: "/artists/alex-rivera", label: "Top Creators" },
       { href: "/leaderboard", label: "Leaderboard" },
-      { href: "#", label: "Blog" },
+      { href: "/blog", label: "Journal" },
     ],
   },
   {
     title: "Company",
     links: [
       { href: "/about", label: "About" },
-      { href: "#", label: "Terms of Use" },
-      { href: "#", label: "Privacy Policy" },
+      { href: "/legal/terms-of-use", label: "Terms of Use" },
+      { href: "/legal/privacy-policy", label: "Privacy Policy" },
       { href: "#", label: "Contact Us" },
     ],
   },
@@ -50,7 +50,9 @@ export function SiteFooter() {
               favorites—no checkout, just creativity.
             </p>
             <p className="mt-6 text-xs text-slate-500">
-              © {new Date().getFullYear()} ArtNoCap. [Placeholder] All rights reserved.
+              © {new Date().getFullYear()} ArtNoCap. The ArtNoCap name, logo, and site are proprietary.
+              Submitted artwork and briefs are provided by users and remain subject to creator grants,
+              project rules, and our legal disclaimers. All rights not expressly granted are reserved.
             </p>
           </div>
           <div className="grid gap-8 sm:grid-cols-3 lg:col-span-8">

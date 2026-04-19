@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -163,8 +164,30 @@ export function SignupForm() {
               className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
             />
             <span>
-              <span className="font-semibold text-slate-900">[Placeholder]</span> I agree to future
-              ArtNoCap terms and privacy policy (copy TBD).
+              <span className="font-semibold text-slate-900">Agreement.</span> By creating an account, I
+              agree to follow ArtNoCap community guidelines and the{" "}
+              <Link
+                href="/legal/user-content-disclaimer"
+                className="font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800"
+              >
+                user content disclaimer
+              </Link>
+              . I understand that the{" "}
+              <Link
+                href="/legal/terms-of-use"
+                className="font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800"
+              >
+                Terms of Use
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/legal/privacy-policy"
+                className="font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800"
+              >
+                Privacy Policy
+              </Link>{" "}
+              govern use of the service and may be updated; continued use after changes constitutes
+              acceptance.
             </span>
           </label>
           <Button type="submit" variant="primary" size="lg" className="w-full justify-center" disabled={busy}>

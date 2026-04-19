@@ -337,9 +337,10 @@ export function SubmitArtworkView({
                   onChange={(e) => setRightsConfirmed(e.target.checked)}
                 />
                 <span>
-                  <span className="font-semibold text-slate-900">[Placeholder]</span> I confirm this is
-                  my original artwork and I grant usage rights required for this project and for
-                  showcasing submissions on ArtNoCap.
+                  <span className="font-semibold text-slate-900">Artist warranty.</span> I confirm this is
+                  my original artwork (or work I am fully licensed to submit) and I grant the usage rights
+                  needed for this project and for showcasing submissions on ArtNoCap, as described in the
+                  project brief and platform disclaimers.
                 </span>
               </label>
 
