@@ -170,8 +170,11 @@ export default function PrivacyPolicyPage() {
               <li>the right to restrict or object to certain processing</li>
             </ul>
             <p>
-              You may exercise these rights by contacting us using the contact method we publish on this
-              website (for example, a dedicated privacy inbox or contact form when available).
+              You may exercise these rights through our{" "}
+              <Link href="/contact" className="font-semibold text-indigo-700 hover:text-indigo-800">
+                contact form
+              </Link>
+              .
             </p>
           </section>
 

@@ -18,7 +18,6 @@ const columns = [
       { href: "/community", label: "Artists & bios (soon)" },
       { href: "/browse", label: "Gallery" },
       { href: "/artists/alex-rivera", label: "Top Creators" },
-      { href: "/leaderboard", label: "Leaderboard" },
       { href: "/blog", label: "Journal" },
     ],
   },
@@ -28,7 +27,7 @@ const columns = [
       { href: "/about", label: "About" },
       { href: "/legal/terms-of-use", label: "Terms of Use" },
       { href: "/legal/privacy-policy", label: "Privacy Policy" },
-      { href: "#", label: "Contact Us" },
+      { href: "/contact", label: "Contact Us" },
     ],
   },
 ];
