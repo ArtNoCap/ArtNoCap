@@ -4,14 +4,14 @@ import { FeaturedProjectsSection } from "@/components/home/FeaturedProjectsSecti
 import { HeroSection } from "@/components/home/HeroSection";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 
-export function HomePage() {
+export function HomePage({ showSignupCta = true }: { showSignupCta?: boolean }) {
   return (
     <>
       <HeroSection />
       <HowItWorksSection />
       <AudienceSection />
       <FeaturedProjectsSection />
-      <CtaBannerSection />
+      {showSignupCta ? <CtaBannerSection /> : null}
     </>
   );
 }

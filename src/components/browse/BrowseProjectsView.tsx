@@ -191,7 +191,7 @@ export function BrowseProjectsView({
                   setPage(1);
                 }}
                 list={DATALIST_ID}
-                placeholder="Keywords (e.g. deskmat, japanese, PG-13, UNHINGED)…"
+                placeholder="Keywords (e.g. deskmat, japanese, mature, extreme)…"
                 className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                 autoComplete="off"
               />
@@ -202,7 +202,7 @@ export function BrowseProjectsView({
               </datalist>
             </div>
             <p className="mt-1 text-xs text-slate-500">
-              Matches title, brief, tags, categories, and content rating labels. Suggestions come from
+              Matches title, brief, tags, categories, and content level labels. Suggestions come from
               active projects.
             </p>
           </div>
@@ -236,7 +236,7 @@ export function BrowseProjectsView({
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
             <div className="w-full sm:w-auto sm:min-w-[14rem]">
               <label htmlFor="browse-rating" className="text-sm font-semibold text-slate-900">
-                Content rating
+                Content Level
               </label>
               <select
                 id="browse-rating"
@@ -247,7 +247,7 @@ export function BrowseProjectsView({
                 }}
                 className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 sm:min-w-[14rem]"
               >
-                <option value="all">All ratings</option>
+                <option value="all">All content levels</option>
                 {CONTENT_RATING_OPTIONS.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.label}
@@ -300,7 +300,7 @@ export function BrowseProjectsView({
 
         {slice.length === 0 ? (
           <p className="mt-10 text-center text-sm text-slate-600">
-            No projects match these filters. Try clearing search, categories, or rating—or pick a
+            No projects match these filters. Try clearing search, categories, or content level—or pick a
             different status chip.
           </p>
         ) : (

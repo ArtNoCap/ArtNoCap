@@ -1,16 +1,5 @@
-import type { ContentRatingId } from "@/data/content-ratings";
+import { normalizeContentRatingFromDb } from "@/data/content-ratings";
 import type { Artist, ArtistStats, Project } from "@/types";
-
-export function isContentRatingId(v: unknown): v is ContentRatingId {
-  return (
-    v === "g" ||
-    v === "pg" ||
-    v === "pg-13" ||
-    v === "r" ||
-    v === "unhinged-mom" ||
-    v === "unhinged-private"
-  );
-}
 
 export function mapDbProject(row: Record<string, unknown>): Project {
   const cr = row.content_rating;
@@ -37,7 +26,7 @@ export function mapDbProject(row: Record<string, unknown>): Project {
     submissionCount: Number(row.submission_count ?? 0),
     voteCount: Number(row.vote_count ?? 0),
     createdAt: new Date(String(row.created_at)).toISOString(),
-    contentRating: isContentRatingId(cr) ? cr : "pg",
+    contentRating: normalizeContentRatingFromDb(cr),
   };
 }
 

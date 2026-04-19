@@ -38,7 +38,7 @@ export interface Project {
   createdAt: ISODateString;
   /** Optional marketing badge on the browse card image */
   spotlight?: ProjectSpotlight;
-  /** Requested content intensity (mirrors Start a project form) */
+  /** Content level for the brief (mirrors Start a project form) */
   contentRating: ContentRatingId;
 }
 

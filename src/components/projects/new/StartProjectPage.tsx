@@ -195,7 +195,7 @@ function validate(values: NewProjectFormState, coverFile: File | null): NewProje
   }
 
   if (!values.contentRating) {
-    errors.contentRating = "Pick a content rating.";
+    errors.contentRating = "Pick a content level.";
   }
 
   return errors;
@@ -606,14 +606,14 @@ export function StartProjectPage() {
                   aria-describedby="content-rating-hint"
                 >
                   <legend className={labelClass} id="content-rating-legend">
-                    Content rating <span className="text-red-600">*</span>
+                    Content Level <span className="text-red-600">*</span>
                   </legend>
                   <p id="content-rating-hint" className="mt-1 text-xs text-slate-500">
-                    How wild can submissions go? This helps creators self-select—
-                    <span className="font-medium text-slate-600"> not a legal film rating.</span>
+                    Choose how bold submissions can be. This helps creators self-select—it is not a
+                    legal or age certification.
                   </p>
                   <div
-                    className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                    className="mt-4 grid gap-3 sm:grid-cols-1 md:grid-cols-3"
                     role="radiogroup"
                     aria-labelledby="content-rating-legend"
                     aria-invalid={errors.contentRating ? true : undefined}

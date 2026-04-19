@@ -31,6 +31,7 @@ export function ProjectDetailView({
   const [sort, setSort] = useState<SubmissionSortId>("top");
   const [selectedId, setSelectedId] = useState<string | null>(initialMyVoteSubmissionId ?? null);
   const [voteBusy, setVoteBusy] = useState(false);
+  const [voteError, setVoteError] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedId(initialMyVoteSubmissionId ?? null);
@@ -81,6 +82,7 @@ export function ProjectDetailView({
   async function onVotePersisted(id: string) {
     if (voteBusy) return;
     setVoteBusy(true);
+    setVoteError(null);
     try {
       const supabase = createSupabaseBrowserClient();
       const { data } = await supabase.auth.getUser();
@@ -97,11 +99,13 @@ export function ProjectDetailView({
       });
       const json = (await res.json().catch(() => null)) as {
         ok?: boolean;
+        error?: string;
         voteCounts?: Record<string, number>;
         myVoteSubmissionId?: string | null;
       } | null;
 
       if (!res.ok || !json?.ok || !json.voteCounts) {
+        setVoteError(json?.error || `Could not save vote (${res.status}).`);
         return;
       }
 
@@ -133,6 +137,11 @@ export function ProjectDetailView({
 
           {tab === "submissions" ? (
             <div className="mt-6 space-y-8">
+              {voteError ? (
+                <p className="rounded-xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-800" role="alert">
+                  {voteError}
+                </p>
+              ) : null}
               {submissionCount === 0 ? (
                 <div className="rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200/80">
                   <p className="text-lg font-bold text-slate-900">No submissions yet</p>

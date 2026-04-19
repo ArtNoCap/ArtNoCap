@@ -12,7 +12,7 @@ export interface NewProjectFormState {
   width: string;
   /** Length in the selected `dimensionUnit` (required). */
   length: string;
-  /** Content intensity / audience comfort (required). */
+  /** Content level for submissions (required). */
   contentRating: ContentRatingId | null;
   tagsInput: string;
   categories: ProjectCategoryOptionId[];

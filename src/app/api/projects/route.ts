@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/admin";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route";
 import { loadProjectsForApp } from "@/lib/catalog/load";
-import { isContentRatingId } from "@/lib/catalog/map";
+import { isContentRatingId } from "@/data/content-ratings";
 import { slugify } from "@/lib/slug";
 
 export const runtime = "nodejs";
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Missing endsAt" }, { status: 400 });
   }
   if (!isContentRatingId(contentRatingRaw)) {
-    return NextResponse.json({ ok: false, error: "Invalid content rating" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Invalid content level" }, { status: 400 });
   }
 
   let tags: string[] = [];

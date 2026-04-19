@@ -120,7 +120,8 @@ export function ProjectCard({
             ))}
             <span
               className="max-w-[10rem] truncate rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold leading-tight text-violet-800 ring-1 ring-violet-100"
-              title="Content rating for this brief"
+              title={`Content level: ${ratingLabel}`}
+              aria-label={`Content level: ${ratingLabel}`}
             >
               {ratingLabel}
             </span>

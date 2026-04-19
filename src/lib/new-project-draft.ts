@@ -1,7 +1,4 @@
-import {
-  CONTENT_RATING_OPTIONS,
-  type ContentRatingId,
-} from "@/data/content-ratings";
+import { normalizeContentRatingFromDb, type ContentRatingId } from "@/data/content-ratings";
 import {
   PROJECT_CATEGORY_OPTIONS,
   type ProjectCategoryOptionId,
@@ -29,7 +26,6 @@ function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null;
 }
 
-const validRatingIds = new Set<string>(CONTENT_RATING_OPTIONS.map((o) => o.id));
 const validCategoryIds = new Set<string>(PROJECT_CATEGORY_OPTIONS.map((o) => o.id));
 
 function parseDraft(raw: string): NewProjectFormState | null {
@@ -44,8 +40,8 @@ function parseDraft(raw: string): NewProjectFormState | null {
         typeof c === "string" && validCategoryIds.has(c),
     );
     let contentRating: ContentRatingId | null = null;
-    if (typeof data.contentRating === "string" && validRatingIds.has(data.contentRating)) {
-      contentRating = data.contentRating as ContentRatingId;
+    if (typeof data.contentRating === "string" && data.contentRating.trim()) {
+      contentRating = normalizeContentRatingFromDb(data.contentRating);
     }
 
     return {
