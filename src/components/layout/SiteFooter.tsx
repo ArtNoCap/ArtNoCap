@@ -15,6 +15,7 @@ const columns = [
   {
     title: "Community",
     links: [
+      { href: "/community", label: "Artists & bios (soon)" },
       { href: "/browse", label: "Gallery" },
       { href: "/artists/alex-rivera", label: "Top Creators" },
       { href: "/leaderboard", label: "Leaderboard" },

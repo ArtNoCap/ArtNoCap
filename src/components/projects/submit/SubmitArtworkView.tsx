@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -30,6 +31,13 @@ export function SubmitArtworkView({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const pathname = usePathname();
+  const submitReturnPath = useMemo(() => {
+    if (pathname && pathname.startsWith("/") && !pathname.startsWith("//")) return pathname;
+    return `/projects/${project.slug}/submit`;
+  }, [pathname, project.slug]);
+  const loginHref = `/login?returnTo=${encodeURIComponent(submitReturnPath)}`;
+  const signupHref = `/signup?returnTo=${encodeURIComponent(submitReturnPath)}`;
 
   const alreadySubmitted = useMemo(() => getMySubmission(project.id), [project.id]);
 
@@ -80,7 +88,7 @@ export function SubmitArtworkView({
   async function onSubmit() {
     if (!authReady) return;
     if (!isLoggedIn) {
-      setError("Please log in to submit artwork.");
+      if (typeof window !== "undefined") window.location.assign(loginHref);
       return;
     }
     if (alreadySubmitted) {
@@ -112,6 +120,11 @@ export function SubmitArtworkView({
         body: fd,
       });
 
+      if (res.status === 401) {
+        if (typeof window !== "undefined") window.location.assign(loginHref);
+        return;
+      }
+
       const json = (await res.json().catch(() => null)) as
         | { ok?: boolean; error?: string; submissionId?: string; publicUrl?: string }
         | null;
@@ -132,6 +145,49 @@ export function SubmitArtworkView({
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (!authReady) {
+    return (
+      <div className="bg-slate-50 py-16">
+        <Container>
+          <p className="text-sm text-slate-600" role="status" aria-live="polite">
+            Checking your session…
+          </p>
+        </Container>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="bg-slate-50 py-12 sm:py-16">
+        <Container>
+          <Link
+            href={`/projects/${project.slug}`}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-700 hover:text-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back to voting
+          </Link>
+          <div className="mx-auto mt-8 max-w-lg rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200/80">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Log in to submit</h1>
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">
+              You need an ArtNoCap account to upload artwork. After you sign in, you&apos;ll return here
+              to finish your submission.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button href={loginHref} variant="primary" size="lg" className="justify-center sm:flex-1">
+                Log in
+              </Button>
+              <Button href={signupHref} variant="secondary" size="lg" className="justify-center sm:flex-1">
+                Create a profile
+              </Button>
+            </div>
+          </div>
+        </Container>
+      </div>
+    );
   }
 
   if (status === "submitted") {

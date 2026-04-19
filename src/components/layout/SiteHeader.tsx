@@ -11,7 +11,7 @@ import { HeaderUserMenu } from "@/components/layout/HeaderUserMenu";
 const nav = [
   { href: "/browse", label: "Browse Projects" },
   { href: "/#how-it-works", label: "How It Works" },
-  { href: "/browse", label: "Community" },
+  { href: "/community", label: "Community" },
   { href: "/about", label: "About" },
 ];
 

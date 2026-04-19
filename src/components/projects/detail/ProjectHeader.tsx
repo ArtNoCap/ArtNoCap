@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Clock, Images, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ShareProjectButton } from "@/components/projects/detail/ShareProjectButton";
 import { formatDaysLeft } from "@/lib/format";
 import type { ProjectDetailModel } from "@/components/projects/detail/types";
 
@@ -103,9 +104,12 @@ export function ProjectHeader({
             </div>
 
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
-              <Button type="button" variant="secondary" className="w-full justify-center sm:w-auto">
-                Share
-              </Button>
+              <ShareProjectButton
+                slug={project.slug}
+                title={project.title}
+                text={project.brief}
+                className="w-full justify-center sm:w-auto"
+              />
               <Button
                 href={`/projects/${project.slug}/submit`}
                 variant="primary"

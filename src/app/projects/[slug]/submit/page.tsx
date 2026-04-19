@@ -1,7 +1,9 @@
+import { redirect } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { SubmitArtworkView } from "@/components/projects/submit/SubmitArtworkView";
 import { resolveCreator } from "@/lib/catalog/creators";
 import { loadProjectBySlug } from "@/lib/catalog/load";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -39,6 +41,14 @@ export default async function SubmitPlaceholderPage({ params }: Props) {
         </Container>
       </div>
     );
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (supabase) {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      redirect(`/login?returnTo=${encodeURIComponent(`/projects/${slug}/submit`)}`);
+    }
   }
 
   return <SubmitArtworkView project={project} creator={creator} />;
