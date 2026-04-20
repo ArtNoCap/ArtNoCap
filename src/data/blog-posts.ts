@@ -5,6 +5,13 @@ import type { BlogPostMeta } from "@/types/blog";
  */
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: "subjective-art-voting-helps",
+    title: "The Subjective Nature of Art — And Why Voting Helps You Decide",
+    publishedAt: "2026-04-20T12:00:00.000Z",
+    summary:
+      "Art isn't objective—so how do you choose? Voting doesn't replace your taste; it adds context, patterns, and a clearer view of what resonates before you commit.",
+  },
+  {
     slug: "why-more-ideas-matter",
     title: "Why More Ideas Matter: The Case for Exploration in Creative Work",
     publishedAt: "2026-04-18T12:00:00.000Z",
