@@ -350,8 +350,9 @@ export function StartProjectPage() {
             Start a project
           </h1>
           <p className="mt-2 max-w-2xl text-base text-slate-600">
-            Post a design brief as a project. Creators submit finished artwork, and the community
-            can vote—one submission per user per project once accounts are enabled.
+            Post a design brief as a project. Creators submit finished artwork while signed in, and
+            the community can vote once per project (signed-in voters keep their pick across devices;
+            guests vote from this browser).
           </p>
         </div>
 

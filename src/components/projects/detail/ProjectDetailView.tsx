@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +9,6 @@ import { ProjectTabs, type ProjectTabId } from "@/components/projects/detail/Pro
 import { SubmissionCard } from "@/components/projects/detail/SubmissionCard";
 import { SortDropdown, type SubmissionSortId } from "@/components/projects/detail/SortDropdown";
 import type { ProjectDetailModel } from "@/components/projects/detail/types";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { isUuid } from "@/lib/is-uuid";
 
 function sumVotes(votes: Record<string, number>) {
@@ -26,7 +24,6 @@ export function ProjectDetailView({
   favoritedSubmissionIds?: string[];
   initialMyVoteSubmissionId?: string | null;
 }) {
-  const router = useRouter();
   const [tab, setTab] = useState<ProjectTabId>("submissions");
   const [sort, setSort] = useState<SubmissionSortId>("top");
   const [selectedId, setSelectedId] = useState<string | null>(initialMyVoteSubmissionId ?? null);
@@ -84,16 +81,10 @@ export function ProjectDetailView({
     setVoteBusy(true);
     setVoteError(null);
     try {
-      const supabase = createSupabaseBrowserClient();
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
-        router.push(`/login?returnTo=${encodeURIComponent(`/projects/${model.project.slug}`)}`);
-        return;
-      }
-
       const nextSelected = selectedId === id ? null : id;
       const res = await fetch(`/api/projects/${model.project.slug}/votes`, {
         method: "PUT",
+        credentials: "same-origin",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ submissionId: nextSelected }),
       });
@@ -178,7 +169,7 @@ export function ProjectDetailView({
                     <h2 className="text-base font-semibold text-slate-900">How voting works</h2>
                     <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
                       Vote for your favorite submission. You can change your vote until the project ends.
-                      Logged-in users get one vote per project.
+                      Anyone can vote once per project; signed-in accounts keep your pick across devices.
                     </p>
                   </div>
                 </div>

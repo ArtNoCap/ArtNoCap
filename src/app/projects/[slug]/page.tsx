@@ -5,8 +5,11 @@ import type { SubmissionWithArtist } from "@/components/projects/detail/types";
 import { resolveCreatorsForProjects } from "@/lib/catalog/creators";
 import { loadProjectBySlug } from "@/lib/catalog/load";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/admin";
 import { isUuid } from "@/lib/is-uuid";
 import type { Submission } from "@/types";
+import { cookies } from "next/headers";
+import { GUEST_VOTER_COOKIE } from "@/lib/voting/guest-session";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -150,9 +153,29 @@ export default async function ProjectDetailPlaceholderPage({ params }: Props) {
             .from("votes")
             .select("submission_id")
             .eq("project_id", project.id)
+            .eq("user_id", user.id)
             .maybeSingle();
           if (!v.error && v.data?.submission_id) {
             myVoteSubmissionId = String(v.data.submission_id);
+          }
+        } else {
+          const jar = await cookies();
+          const guestSid = jar.get(GUEST_VOTER_COOKIE)?.value;
+          if (guestSid && isUuid(guestSid)) {
+            try {
+              const admin = createSupabaseServiceRoleClient();
+              const gv = await admin
+                .from("anonymous_votes")
+                .select("submission_id")
+                .eq("project_id", project.id)
+                .eq("session_id", guestSid)
+                .maybeSingle();
+              if (!gv.error && gv.data?.submission_id) {
+                myVoteSubmissionId = String(gv.data.submission_id);
+              }
+            } catch {
+              /* service role not configured */
+            }
           }
         }
       }
