@@ -5,6 +5,13 @@ import type { BlogPostMeta } from "@/types/blog";
  */
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: "how-to-describe-what-you-want-in-a-design",
+    title: "How to Describe What You Want in a Design (And Why It's So Hard)",
+    publishedAt: "2026-04-22T12:00:00.000Z",
+    summary:
+      "Design briefs rely on words—but \"modern\" and \"minimal\" mean different things to different people. Here's why describing a design is hard, why briefs often miss, and how comparing multiple concepts gets you to clarity faster.",
+  },
+  {
     slug: "subjective-art-voting-helps",
     title: "The Subjective Nature of Art — And Why Voting Helps You Decide",
     publishedAt: "2026-04-20T12:00:00.000Z",
