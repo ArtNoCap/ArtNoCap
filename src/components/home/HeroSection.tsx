@@ -48,8 +48,8 @@ export function HeroSection() {
               Custom artwork made simple.
             </h1>
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
-              Post your idea, get amazing artwork submissions from our community, and choose your
-              favorite.
+              Describe what you’re making—t‑shirt art, a book cover, or print-ready graphics. Get real submissions from
+              the community, then use votes to quickly see what people love.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button href="/projects/new" variant="primary" size="lg">
