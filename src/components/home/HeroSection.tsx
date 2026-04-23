@@ -45,7 +45,7 @@ export function HeroSection() {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-10">
           <div>
             <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl sm:leading-tight">
-              Custom artwork made simple.
+              Crowdsourced art you&apos;ll love.
             </h1>
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
               Describe what you’re making—t‑shirt art, a book cover, or print-ready graphics. Get real submissions from
