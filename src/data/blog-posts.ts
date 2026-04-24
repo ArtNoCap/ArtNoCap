@@ -5,6 +5,13 @@ import type { BlogPostMeta } from "@/types/blog";
  */
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: "what-makes-a-design-stand-out-instantly",
+    title: "What Makes a Design Stand Out Instantly",
+    publishedAt: "2026-04-24T12:00:00.000Z",
+    summary:
+      "Why do some logos, covers, and layouts grab you in a second? Learn how attention, visual hierarchy, contrast, and context work together—so you can spot standout design when comparing options.",
+  },
+  {
     slug: "how-to-describe-what-you-want-in-a-design",
     title: "How to Describe What You Want in a Design (And Why It's So Hard)",
     publishedAt: "2026-04-22T12:00:00.000Z",
