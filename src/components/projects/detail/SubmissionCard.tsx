@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Heart, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { VoteButton } from "@/components/projects/detail/VoteButton";
 import type { SubmissionWithArtist } from "@/components/projects/detail/types";
@@ -30,11 +30,25 @@ export function SubmissionCard({
   const pathname = usePathname() || "/";
   const [saved, setSaved] = useState(initialSaved);
   const [saveBusy, setSaveBusy] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const lightboxRef = useRef<HTMLDivElement | null>(null);
   const canPersistFavorite = isUuid(submission.id);
 
   useEffect(() => {
     setSaved(initialSaved);
   }, [initialSaved, submission.id]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    // Best-effort focus for accessibility.
+    lightboxRef.current?.focus();
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lightboxOpen]);
 
   async function toggleSaved() {
     if (!canPersistFavorite) return;
@@ -65,13 +79,52 @@ export function SubmissionCard({
   }
 
   return (
-    <article
-      className={`group relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 transition ${
+    <>
+      {lightboxOpen ? (
+        <div
+          ref={lightboxRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Enlarged artwork submission by ${submission.artist.displayName}`}
+          tabIndex={-1}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 outline-none"
+          onPointerDown={(e) => {
+            // Close only when clicking the backdrop.
+            if (e.target === e.currentTarget) setLightboxOpen(false);
+          }}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-white ring-1 ring-white/20 backdrop-blur transition hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            onClick={() => setLightboxOpen(false)}
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+
+          <div
+            className="relative h-full max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-2xl bg-black/20 ring-1 ring-white/10"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={submission.imageUrl}
+              alt={`Artwork submission by ${submission.artist.displayName}`}
+              fill
+              sizes="100vw"
+              className="object-contain"
+              priority
+            />
+          </div>
+        </div>
+      ) : null}
+
+      <article
+        className={`group relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 transition ${
         selected
           ? "ring-indigo-300 shadow-md shadow-indigo-600/10"
           : "ring-slate-200/80 hover:-translate-y-0.5 hover:shadow-md"
       }`}
-    >
+      >
       {canPersistFavorite ? (
         <button
           type="button"
@@ -89,7 +142,12 @@ export function SubmissionCard({
         </button>
       ) : null}
 
-      <div className="relative aspect-[4/3] w-full bg-slate-100">
+      <button
+        type="button"
+        className="relative aspect-[4/3] w-full cursor-zoom-in bg-slate-100"
+        onClick={() => setLightboxOpen(true)}
+        aria-label={`View larger image (submission by ${submission.artist.displayName})`}
+      >
         <Image
           src={submission.imageUrl}
           alt={`Artwork submission by ${submission.artist.displayName}`}
@@ -100,7 +158,7 @@ export function SubmissionCard({
         {selected ? (
           <div className="absolute inset-0 ring-inset ring-2 ring-indigo-500/40" aria-hidden />
         ) : null}
-      </div>
+      </button>
 
       <div className="space-y-3 p-4">
         <div className="flex items-center justify-between gap-3">
@@ -128,7 +186,8 @@ export function SubmissionCard({
           <VoteButton selected={selected} onClick={onVote} disabled={voteDisabled} />
         </div>
       </div>
-    </article>
+      </article>
+    </>
   );
 }
 
