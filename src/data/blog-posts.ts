@@ -5,6 +5,13 @@ import type { BlogPostMeta } from "@/types/blog";
  */
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: "why-some-designs-gain-momentum",
+    title: "Why Some Designs Gain Momentum (And Others Don’t)",
+    publishedAt: "2026-04-25T12:00:00.000Z",
+    summary:
+      "Some designs spike and fade; others keep earning votes. Here’s what drives design momentum—clarity, coherence, and alignment—so you can pick ideas that hold up beyond first impression.",
+  },
+  {
     slug: "what-makes-a-design-stand-out-instantly",
     title: "What Makes a Design Stand Out Instantly",
     publishedAt: "2026-04-24T12:00:00.000Z",
