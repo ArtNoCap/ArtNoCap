@@ -60,16 +60,3 @@ export interface ActivityItem {
   message: string;
   createdAt: ISODateString;
 }
-
-export type LeaderboardPeriod = "week" | "month" | "all";
-
-export type LeaderboardTab = "creators" | "voters";
-
-export interface LeaderboardRow {
-  rank: number;
-  userId: string;
-  displayName: string;
-  avatarUrl: string;
-  score: number;
-  meta?: string;
-}

@@ -1,27 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PROFILE_MAX_SPECIALTIES, PROFILE_MAX_STYLE_KEYWORDS, PROFILE_TAG_MAX_CHARS } from "@/data/profile-limits";
 import { isProfileRoleId } from "@/data/profile-roles";
 import { mapProfileFromDb } from "@/lib/profile-map";
+import { parseProfileTagsInput } from "@/lib/profile-tags";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route";
 
 export const runtime = "nodejs";
 
-function normalizeKeywords(input: unknown): string[] | null {
-  let arr: unknown[];
-  if (Array.isArray(input)) arr = input;
-  else if (typeof input === "string") arr = input.split(",");
-  else return null;
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const item of arr) {
-    if (typeof item !== "string") continue;
-    const t = item.trim().toLowerCase().slice(0, 48);
-    if (!t) continue;
-    if (seen.has(t)) continue;
-    seen.add(t);
-    out.push(t);
-    if (out.length > 24) return null;
-  }
-  return out;
+function isExperienceLevelId(v: unknown): v is "newcomer" | "intermediate" | "pro" {
+  return v === "newcomer" || v === "intermediate" || v === "pro";
+}
+
+function isAvailabilityId(v: unknown): v is "open" | "soon" | "closed" {
+  return v === "open" || v === "soon" || v === "closed";
+}
+
+function normalizePublicSlug(raw: string): string | null {
+  const s = raw.trim().toLowerCase();
+  if (s.length < 3 || s.length > 40) return null;
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s)) return null;
+  return s;
 }
 
 export async function PATCH(req: NextRequest) {
@@ -74,14 +72,72 @@ export async function PATCH(req: NextRequest) {
     updates.profile_role = o.profileRole;
   }
   if ("styleKeywords" in o) {
-    const kw = normalizeKeywords(o.styleKeywords);
-    if (kw === null) {
+    const kw = parseProfileTagsInput(o.styleKeywords, PROFILE_MAX_STYLE_KEYWORDS);
+    if (!kw.ok) {
       return NextResponse.json(
-        { ok: false, error: "Use at most 24 keywords, each 48 characters or less." },
+        {
+          ok: false,
+          error:
+            kw.reason === "invalid_type"
+              ? "Style keywords must be a comma-separated string or a list of strings."
+              : `Use at most ${PROFILE_MAX_STYLE_KEYWORDS} style keywords, each ${PROFILE_TAG_MAX_CHARS} characters or less.`,
+        },
         { status: 400 },
       );
     }
-    updates.style_keywords = kw;
+    updates.style_keywords = kw.tags;
+  }
+  if ("specialties" in o) {
+    const sp = parseProfileTagsInput(o.specialties, PROFILE_MAX_SPECIALTIES);
+    if (!sp.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            sp.reason === "invalid_type"
+              ? "Specialties must be a comma-separated string or a list of strings."
+              : `Use at most ${PROFILE_MAX_SPECIALTIES} specialties, each ${PROFILE_TAG_MAX_CHARS} characters or less.`,
+        },
+        { status: 400 },
+      );
+    }
+    updates.specialties = sp.tags;
+  }
+  if ("experienceLevel" in o) {
+    if (!isExperienceLevelId(o.experienceLevel)) {
+      return NextResponse.json({ ok: false, error: "Invalid experience level." }, { status: 400 });
+    }
+    updates.experience_level = o.experienceLevel;
+  }
+  if ("availability" in o) {
+    if (!isAvailabilityId(o.availability)) {
+      return NextResponse.json({ ok: false, error: "Invalid availability." }, { status: 400 });
+    }
+    updates.availability = o.availability;
+  }
+  if ("location" in o) {
+    const loc = String(o.location ?? "").trim().slice(0, 80);
+    updates.location = loc;
+  }
+  if ("slug" in o) {
+    const slug = normalizePublicSlug(String(o.slug ?? ""));
+    if (!slug) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Public profile URL must be 3–40 characters: lowercase letters, numbers, and single hyphens between segments.",
+        },
+        { status: 400 },
+      );
+    }
+    updates.slug = slug;
+  }
+  if ("isPublic" in o) {
+    if (typeof o.isPublic !== "boolean") {
+      return NextResponse.json({ ok: false, error: "isPublic must be true or false." }, { status: 400 });
+    }
+    updates.is_public = o.isPublic;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -92,10 +148,16 @@ export async function PATCH(req: NextRequest) {
     .from("profiles")
     .update(updates)
     .eq("id", userData.user.id)
-    .select("id, display_name, avatar_url, bio, profile_role, style_keywords")
+    .select(
+      "id, slug, display_name, avatar_url, banner_url, bio, profile_role, style_keywords, specialties, experience_level, location, availability, is_public, email_verified, created_at",
+    )
     .single();
 
   if (upd.error) {
+    const msg = upd.error.message || "";
+    if (msg.toLowerCase().includes("profiles_slug_unique") || msg.toLowerCase().includes("duplicate key")) {
+      return NextResponse.json({ ok: false, error: "That public profile URL is already taken. Try another." }, { status: 400 });
+    }
     return NextResponse.json({ ok: false, error: upd.error.message }, { status: 400 });
   }
 

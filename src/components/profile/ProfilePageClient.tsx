@@ -4,12 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Image as ImageIcon, Loader2 } from "lucide-react";
+import { PROFILE_MAX_SPECIALTIES, PROFILE_MAX_STYLE_KEYWORDS } from "@/data/profile-limits";
 import { PROFILE_ROLE_OPTIONS, type ProfileRoleId } from "@/data/profile-roles";
+import { parseProfileTagsInput } from "@/lib/profile-tags";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import type {
   ProfileProjectSummary,
+  ProfileFollowingSummary,
   ProfileSavedSubmissionSummary,
   ProfileSubmissionSummary,
   UserProfileRow,
@@ -52,6 +55,7 @@ export function ProfilePageClient({
   mySubmissions,
   favoriteProjects,
   favoriteSubmissions,
+  following,
 }: {
   email: string | null;
   initialProfile: UserProfileRow;
@@ -59,20 +63,32 @@ export function ProfilePageClient({
   mySubmissions: ProfileSubmissionSummary[];
   favoriteProjects: ProfileProjectSummary[];
   favoriteSubmissions: ProfileSavedSubmissionSummary[];
+  following: ProfileFollowingSummary[];
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const bannerRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState(initialProfile.displayName);
   const [bio, setBio] = useState(initialProfile.bio);
   const [profileRole, setProfileRole] = useState<ProfileRoleId>(initialProfile.profileRole);
   const [keywordsInput, setKeywordsInput] = useState(initialProfile.styleKeywords.join(", "));
+  const [specialtiesInput, setSpecialtiesInput] = useState(initialProfile.specialties.join(", "));
+  const [experienceLevel, setExperienceLevel] = useState<UserProfileRow["experienceLevel"]>(
+    initialProfile.experienceLevel,
+  );
+  const [location, setLocation] = useState(initialProfile.location);
+  const [availability, setAvailability] = useState<UserProfileRow["availability"]>(initialProfile.availability);
+  const [isPublic, setIsPublic] = useState(initialProfile.isPublic);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initialProfile.avatarUrl);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(initialProfile.bannerUrl);
 
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [bannerBusy, setBannerBusy] = useState(false);
+  const [bannerError, setBannerError] = useState<string | null>(null);
   const [showSignInEmail, setShowSignInEmail] = useState(false);
   const [archivingSlug, setArchivingSlug] = useState<string | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
@@ -82,13 +98,25 @@ export function ProfilePageClient({
     setBio(initialProfile.bio);
     setProfileRole(initialProfile.profileRole);
     setKeywordsInput(initialProfile.styleKeywords.join(", "));
+    setSpecialtiesInput(initialProfile.specialties.join(", "));
+    setExperienceLevel(initialProfile.experienceLevel);
+    setLocation(initialProfile.location);
+    setAvailability(initialProfile.availability);
+    setIsPublic(initialProfile.isPublic);
     setAvatarUrl(initialProfile.avatarUrl);
+    setBannerUrl(initialProfile.bannerUrl);
   }, [
     initialProfile.displayName,
     initialProfile.bio,
     initialProfile.profileRole,
     initialProfile.avatarUrl,
     initialProfile.styleKeywords,
+    initialProfile.specialties,
+    initialProfile.experienceLevel,
+    initialProfile.location,
+    initialProfile.availability,
+    initialProfile.isPublic,
+    initialProfile.bannerUrl,
   ]);
 
   const avatarDicebearSeed = encodeURIComponent(initialProfile.id || displayName || "user");
@@ -121,10 +149,28 @@ export function ProfilePageClient({
   const onSaveProfile = useCallback(async () => {
     setSaveState("saving");
     setSaveMessage(null);
-    const styleKeywords = keywordsInput
-      .split(",")
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
+    const kwParsed = parseProfileTagsInput(keywordsInput, PROFILE_MAX_STYLE_KEYWORDS);
+    if (!kwParsed.ok) {
+      setSaveState("error");
+      setSaveMessage(
+        kwParsed.reason === "too_many"
+          ? `Use at most ${PROFILE_MAX_STYLE_KEYWORDS} style keywords (comma-separated).`
+          : "Could not read style keywords.",
+      );
+      return;
+    }
+    const spParsed = parseProfileTagsInput(specialtiesInput, PROFILE_MAX_SPECIALTIES);
+    if (!spParsed.ok) {
+      setSaveState("error");
+      setSaveMessage(
+        spParsed.reason === "too_many"
+          ? `Use at most ${PROFILE_MAX_SPECIALTIES} specialties (comma-separated).`
+          : "Could not read specialties.",
+      );
+      return;
+    }
+    const styleKeywords = kwParsed.tags;
+    const specialties = spParsed.tags;
     try {
       const res = await fetch("/api/profile", {
         method: "PATCH",
@@ -134,6 +180,11 @@ export function ProfilePageClient({
           bio: bio.trim(),
           profileRole,
           styleKeywords,
+          specialties,
+          experienceLevel,
+          location: location.trim(),
+          availability,
+          isPublic,
         }),
       });
       const json = (await res.json().catch(() => null)) as
@@ -150,7 +201,18 @@ export function ProfilePageClient({
       setSaveState("error");
       setSaveMessage(e instanceof Error ? e.message : "Save failed");
     }
-  }, [bio, displayName, keywordsInput, profileRole, router]);
+  }, [
+    availability,
+    isPublic,
+    bio,
+    displayName,
+    experienceLevel,
+    keywordsInput,
+    location,
+    profileRole,
+    router,
+    specialtiesInput,
+  ]);
 
   const onAvatarPick = useCallback(() => {
     fileRef.current?.click();
@@ -179,6 +241,38 @@ export function ProfilePageClient({
       } finally {
         setAvatarBusy(false);
         if (fileRef.current) fileRef.current.value = "";
+      }
+    },
+    [router],
+  );
+
+  const onBannerPick = useCallback(() => {
+    bannerRef.current?.click();
+  }, []);
+
+  const onBannerFile = useCallback(
+    async (list: FileList | null) => {
+      const file = list?.[0];
+      if (!file) return;
+      setBannerError(null);
+      setBannerBusy(true);
+      try {
+        const fd = new FormData();
+        fd.set("file", file);
+        const res = await fetch("/api/profile/banner", { method: "POST", body: fd });
+        const json = (await res.json().catch(() => null)) as
+          | { ok?: boolean; error?: string; bannerUrl?: string }
+          | null;
+        if (!res.ok || !json?.ok || !json.bannerUrl) {
+          throw new Error(json?.error || "Upload failed");
+        }
+        setBannerUrl(json.bannerUrl);
+        router.refresh();
+      } catch (e) {
+        setBannerError(e instanceof Error ? e.message : "Upload failed");
+      } finally {
+        setBannerBusy(false);
+        if (bannerRef.current) bannerRef.current.value = "";
       }
     },
     [router],
@@ -225,6 +319,58 @@ export function ProfilePageClient({
               <h2 className="text-lg font-semibold text-slate-900">Photo & presence</h2>
               <p className="mt-1 text-xs text-slate-500">Avatar is public on the site once you participate.</p>
 
+              <div className="mt-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Banner image</p>
+                    <p className="mt-1 text-xs text-slate-500">Shows at the top of your public artist page.</p>
+                  </div>
+                  <div className="shrink-0">
+                    <input
+                      ref={bannerRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="sr-only"
+                      onChange={(e) => void onBannerFile(e.target.files)}
+                    />
+                    <Button type="button" variant="secondary" onClick={onBannerPick} disabled={bannerBusy}>
+                      <ImageIcon className="h-4 w-4" aria-hidden />
+                      {bannerBusy ? "Uploading…" : bannerUrl ? "Change banner" : "Upload banner"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-4 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200/80">
+                  <div className="relative aspect-[16/5]">
+                    {bannerUrl ? (
+                      <Image
+                        src={bannerUrl}
+                        alt=""
+                        fill
+                        sizes="(min-width: 768px) 720px, 100vw"
+                        className="object-cover"
+                        unoptimized={bannerUrl.includes("dicebear")}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/5 to-black/40" />
+                    {bannerBusy ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40">
+                        <Loader2 className="h-8 w-8 animate-spin text-white" aria-hidden />
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                {bannerError ? (
+                  <p className="mt-3 text-sm text-red-600" role="alert">
+                    {bannerError}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-xs text-slate-500">PNG, JPG, or WEBP · up to 1MB · recommended 3:1</p>
+              </div>
+
               <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start">
                 <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-slate-100 ring-2 ring-white shadow-md">
                   <Image
@@ -269,17 +415,55 @@ export function ProfilePageClient({
               </div>
 
               <div className="mt-8 space-y-5">
-                <div>
-                  <label htmlFor="profile-display" className="text-sm font-semibold text-slate-900">
-                    Display name
-                  </label>
-                  <input
-                    id="profile-display"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    maxLength={80}
-                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
-                  />
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                  <div className="min-w-0 flex-1">
+                    <label htmlFor="profile-display" className="text-sm font-semibold text-slate-900">
+                      Display name
+                    </label>
+                    <input
+                      id="profile-display"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      maxLength={80}
+                      className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    />
+                  </div>
+                  <fieldset className="shrink-0 sm:pt-0.5">
+                    <legend className="text-sm font-semibold text-slate-900">Public profile</legend>
+                    <p className="sr-only">Choose whether you appear on Discover Artists and your public artist page.</p>
+                    <div
+                      className="mt-2 inline-flex rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200/80"
+                      role="group"
+                      aria-label="Profile visibility"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setIsPublic(true)}
+                        aria-pressed={isPublic}
+                        className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+                          isPublic ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80" : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Public
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsPublic(false)}
+                        aria-pressed={!isPublic}
+                        className={`rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+                          !isPublic ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80" : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Private
+                      </button>
+                    </div>
+                    <p className="mt-2 max-w-[15rem] text-xs leading-relaxed text-slate-500">
+                      {isPublic
+                        ? "You appear on Community and anyone can open your public artist page."
+                        : "Hidden from Discover Artists and your /artists/… page; your account and projects work as usual."}{" "}
+                      <span className="font-medium text-slate-600">Save profile below to apply.</span>
+                    </p>
+                  </fieldset>
                 </div>
 
                 <div>
@@ -332,7 +516,7 @@ export function ProfilePageClient({
                     Style keywords
                   </label>
                   <p id="profile-keywords-hint" className="mt-1 text-xs text-slate-500">
-                    Comma-separated (e.g. minimal, hand-drawn, retro). Up to 24 tags.
+                    Comma-separated (e.g. minimal, hand-drawn, retro). Up to {PROFILE_MAX_STYLE_KEYWORDS} tags.
                   </p>
                   <input
                     id="profile-keywords"
@@ -340,6 +524,76 @@ export function ProfilePageClient({
                     onChange={(e) => setKeywordsInput(e.target.value)}
                     aria-describedby="profile-keywords-hint"
                     placeholder="minimal, editorial, neon…"
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="profile-specialties" className="text-sm font-semibold text-slate-900">
+                    Specialties
+                  </label>
+                  <p id="profile-specialties-hint" className="mt-1 text-xs text-slate-500">
+                    What do you focus on? Comma-separated (e.g. poster design, branding, illustration). Up to{" "}
+                    {PROFILE_MAX_SPECIALTIES} tags.
+                  </p>
+                  <input
+                    id="profile-specialties"
+                    value={specialtiesInput}
+                    onChange={(e) => setSpecialtiesInput(e.target.value)}
+                    aria-describedby="profile-specialties-hint"
+                    placeholder="branding, poster design, illustration…"
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="profile-experience" className="text-sm font-semibold text-slate-900">
+                      Experience level
+                    </label>
+                    <select
+                      id="profile-experience"
+                      value={experienceLevel}
+                      onChange={(e) => setExperienceLevel(e.target.value as UserProfileRow["experienceLevel"])}
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    >
+                      <option value="newcomer">Newcomer</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="pro">Pro</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="profile-availability" className="text-sm font-semibold text-slate-900">
+                      Availability
+                    </label>
+                    <select
+                      id="profile-availability"
+                      value={availability}
+                      onChange={(e) => setAvailability(e.target.value as UserProfileRow["availability"])}
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    >
+                      <option value="open">Open for projects</option>
+                      <option value="soon">Available soon</option>
+                      <option value="closed">Not available</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="profile-location" className="text-sm font-semibold text-slate-900">
+                    Location
+                  </label>
+                  <p id="profile-location-hint" className="mt-1 text-xs text-slate-500">
+                    Optional (e.g. Austin, TX or Remote).
+                  </p>
+                  <input
+                    id="profile-location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    maxLength={80}
+                    aria-describedby="profile-location-hint"
+                    placeholder="Remote"
                     className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                   />
                 </div>
@@ -427,6 +681,52 @@ export function ProfilePageClient({
                       <SubmissionThumb s={s} label="Your submission" />
                     </li>
                   ))}
+                </ul>
+              )}
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold text-slate-900">Following</h2>
+              <p className="mt-1 text-sm text-slate-600">Creators you’ve followed.</p>
+              {following.length === 0 ? (
+                <p className="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/80 p-6 text-sm text-slate-600">
+                  You’re not following anyone yet.{" "}
+                  <Link href="/community" className="font-semibold text-indigo-700 hover:text-indigo-800">
+                    Explore the community
+                  </Link>{" "}
+                  to find creators.
+                </p>
+              ) : (
+                <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {following.map((p) => {
+                    const seed = encodeURIComponent(p.id || p.displayName || "creator");
+                    const fallback = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+                    return (
+                      <li key={p.id}>
+                        <Link
+                          href={`/artists/${encodeURIComponent(p.slug)}`}
+                          className="group flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80 transition hover:ring-indigo-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                        >
+                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200">
+                            <Image
+                              src={p.avatarUrl || fallback}
+                              alt=""
+                              fill
+                              sizes="48px"
+                              className="object-cover"
+                              unoptimized={!p.avatarUrl || p.avatarUrl.includes("dicebear")}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-slate-900 group-hover:text-indigo-700">
+                              {p.displayName}
+                            </p>
+                            <p className="truncate text-xs text-slate-500">View profile</p>
+                          </div>
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </section>

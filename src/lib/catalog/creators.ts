@@ -14,14 +14,16 @@ function slugFromName(name: string, email: string | null) {
 
 function profileToArtist(profile: {
   id: string;
+  slug?: string | null;
   display_name: string | null;
   avatar_url: string | null;
   created_at: string | null;
 }): Artist {
   const displayName = profile.display_name || "Creator";
+  const slug = String(profile.slug ?? "").trim() || slugFromName(displayName, null);
   return {
     id: `u:${profile.id}`,
-    slug: slugFromName(displayName, null),
+    slug,
     displayName,
     avatarUrl:
       profile.avatar_url ||
@@ -52,7 +54,7 @@ export async function resolveCreator(creatorId: string): Promise<Artist | undefi
     const uid = creatorId.slice(2);
     const { data, error } = await supabase
       .from("profiles")
-      .select("id,display_name,avatar_url,created_at")
+      .select("id,slug,display_name,avatar_url,created_at")
       .eq("id", uid)
       .maybeSingle();
     if (error || !data) return undefined;

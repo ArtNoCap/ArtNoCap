@@ -1,23 +1,47 @@
-import { Container } from "@/components/ui/Container";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { PublicArtistProfileView } from "@/components/artists/PublicArtistProfileView";
+import { loadPublicArtistPageData } from "@/lib/artists/load-public-artist-page";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export async function generateMetadata({ params }: Props) {
-  const { slug } = await params;
-  return { title: `Artist · ${slug}` };
+async function loadDisplayNameForSlug(slug: string): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, is_public, email_verified")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (profile?.display_name) {
+    const visible =
+      (profile as { is_public?: boolean; email_verified?: boolean }).is_public === true &&
+      (profile as { is_public?: boolean; email_verified?: boolean }).email_verified === true;
+    if (visible) return String(profile.display_name);
+  }
+
+  const { data: artist } = await supabase.from("artists").select("display_name").eq("slug", slug).maybeSingle();
+  if (artist?.display_name) return String(artist.display_name);
+
+  return null;
 }
 
-export default async function ArtistProfilePlaceholderPage({ params }: Props) {
-  const { slug } = await params;
-  return (
-    <div className="bg-slate-50 py-16">
-      <Container>
-        <h1 className="text-3xl font-bold text-slate-900">Artist profile</h1>
-        <p className="mt-3 max-w-2xl text-slate-600">
-          Phase 4 will render <span className="font-mono text-sm">{slug}</span> with stats, tabs,
-          badges, and recent submissions.
-        </p>
-      </Container>
-    </div>
-  );
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug: raw } = await params;
+  const slug = decodeURIComponent(raw);
+  const name = await loadDisplayNameForSlug(slug);
+  return { title: name ? `${name} · Artist` : `Artist · ${slug}` };
+}
+
+export default async function ArtistProfilePage({ params }: Props) {
+  const { slug: raw } = await params;
+  const slug = decodeURIComponent(raw);
+  const data = await loadPublicArtistPageData(slug);
+  if (data.kind === "none") notFound();
+
+  return <PublicArtistProfileView data={data} />;
 }

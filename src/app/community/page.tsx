@@ -1,61 +1,79 @@
-import type { Metadata } from "next";
-import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { CommunityPageClient } from "@/components/community/CommunityPageClient";
+import { listCommunityProfiles } from "@/lib/community/list-profiles";
 
-export const metadata: Metadata = {
-  title: "Community",
-  description:
-    "Coming soon: discover artists on ArtNoCap—search, profiles, bios, and more ways to explore creators.",
-};
+export const dynamic = "force-dynamic";
 
-export default function CommunityComingSoonPage() {
+export const metadata = {
+  title: "Community · Discover Artists",
+  description: "Explore artists on ArtNoCap. Search and filter by style, specialty, experience, and availability.",
+} as const;
+
+function splitCsv(v: string | null): string[] {
+  if (!v) return [];
+  return v
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+    .slice(0, 24);
+}
+
+export default async function CommunityPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const get = (k: string) => {
+    const v = sp[k];
+    if (Array.isArray(v)) return v[0] ?? null;
+    return typeof v === "string" ? v : null;
+  };
+
+  const q = get("q") ?? "";
+  const sort: "most_active" | "newest" = get("sort") === "newest" ? "newest" : "most_active";
+  const styles = splitCsv(get("styles"));
+  const specialties = splitCsv(get("specialties"));
+  const experienceLevels = splitCsv(get("experience")).filter(
+    (v): v is "newcomer" | "intermediate" | "pro" => v === "newcomer" || v === "intermediate" || v === "pro",
+  );
+  const availability = splitCsv(get("availability")).filter(
+    (v): v is "open" | "soon" | "closed" => v === "open" || v === "soon" || v === "closed",
+  );
+  const location = get("location") ?? "";
+
+  const profiles = await listCommunityProfiles({
+    q,
+    sort,
+    styles,
+    specialties,
+    experienceLevels,
+    availability,
+    location,
+  });
+
+  // Build option lists from the current dataset (good enough for v1).
+  const availableStyles = [...new Set(profiles.flatMap((p) => p.styleKeywords))];
+  const availableSpecialties = [...new Set(profiles.flatMap((p) => p.specialties))];
+
   return (
-    <div className="bg-slate-50 py-16 sm:py-20">
-      <Container className="max-w-2xl">
-        <p className="text-sm font-semibold uppercase tracking-wide text-indigo-700">Coming soon</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Community</h1>
-        <p className="mt-4 text-base leading-relaxed text-slate-600">
-          This space will become your home for <strong className="text-slate-900">finding and learning
-          about artists</strong> on ArtNoCap—not just their submissions on a single project, but who
-          they are and how they work.
-        </p>
-
-        <div className="mt-10 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80 sm:p-8">
-          <h2 className="text-lg font-semibold text-slate-900">Planned for here</h2>
-          <ul className="mt-4 list-inside list-disc space-y-2 text-sm leading-relaxed text-slate-600 marker:text-indigo-600">
-            <li>Search and browse artists by name, style, or specialty</li>
-            <li>Rich artist bios and portfolio-style profiles</li>
-            <li>Ways to jump from a creator you like into their public work and active projects</li>
-            <li>More community-driven discovery as the platform grows</li>
-          </ul>
+    <div className="bg-slate-50 py-10 sm:py-14">
+      <Container>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-indigo-700">Community</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Discover Artists</h1>
+            <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600">
+              Explore talent from the ArtNoCap community. Search by style, specialty, experience, and availability.
+            </p>
+          </div>
         </div>
 
-        <p className="mt-8 text-sm text-slate-600">
-          Until then, explore{" "}
-          <Link
-            href="/browse"
-            className="font-semibold text-indigo-700 hover:text-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            open projects
-          </Link>{" "}
-          or the{" "}
-          <Link
-            href="/leaderboard"
-            className="font-semibold text-indigo-700 hover:text-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            leaderboard
-          </Link>
-          .
-        </p>
-
-        <p className="mt-6">
-          <Link
-            href="/"
-            className="text-sm font-semibold text-slate-700 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            ← Back to home
-          </Link>
-        </p>
+        <CommunityPageClient
+          initialProfiles={profiles}
+          availableStyles={availableStyles}
+          availableSpecialties={availableSpecialties}
+        />
       </Container>
     </div>
   );

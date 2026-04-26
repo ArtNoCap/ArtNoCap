@@ -5,8 +5,8 @@ import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route";
 
 export const runtime = "nodejs";
 
-const bucket = "avatars";
-const maxBytes = 5 * 1024 * 1024;
+const bucket = "profile-banners";
+const maxBytes = 1 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   let supabase: ReturnType<typeof createSupabaseRouteHandlerClient>["supabase"];
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "File must be an image" }, { status: 400 });
   }
   if (file.size > maxBytes) {
-    return NextResponse.json({ ok: false, error: "Image must be 5MB or smaller" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Image must be 1MB or smaller" }, { status: 400 });
   }
 
   const ext =
@@ -66,7 +66,6 @@ export async function POST(req: NextRequest) {
     upsert: false,
     cacheControl: "3600",
   });
-
   if (upload.error) {
     return NextResponse.json({ ok: false, error: upload.error.message }, { status: 400 });
   }
@@ -76,7 +75,7 @@ export async function POST(req: NextRequest) {
 
   const upd = await admin
     .from("profiles")
-    .update({ avatar_url: publicUrl })
+    .update({ banner_url: publicUrl })
     .eq("id", userId)
     .select(
       "id, slug, display_name, avatar_url, banner_url, bio, profile_role, style_keywords, specialties, experience_level, location, availability, is_public, email_verified, created_at",
@@ -89,7 +88,8 @@ export async function POST(req: NextRequest) {
   }
 
   const profile = mapProfileFromDb(upd.data as Record<string, unknown>);
-  const res = NextResponse.json({ ok: true, avatarUrl: publicUrl, profile });
+  const res = NextResponse.json({ ok: true, bannerUrl: publicUrl, profile });
   applyCookies(res);
   return res;
 }
+

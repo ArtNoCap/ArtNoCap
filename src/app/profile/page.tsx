@@ -10,6 +10,7 @@ import {
 } from "@/lib/catalog/winning-submission-cover";
 import type {
   ProfileProjectSummary,
+  ProfileFollowingSummary,
   ProfileSavedSubmissionSummary,
   ProfileSubmissionSummary,
 } from "@/types/user-profile";
@@ -59,7 +60,9 @@ export default async function ProfilePage() {
 
   const { data: row, error: profErr } = await supabase
     .from("profiles")
-    .select("id, display_name, avatar_url, bio, profile_role, style_keywords")
+    .select(
+      "id, slug, display_name, avatar_url, banner_url, bio, profile_role, style_keywords, specialties, experience_level, location, availability, is_public, email_verified, created_at",
+    )
     .eq("id", userId)
     .maybeSingle();
 
@@ -156,6 +159,34 @@ export default async function ProfilePage() {
     });
   }
 
+  const { data: followRows } = await supabase
+    .from("profile_follows")
+    .select("following_id, created_at")
+    .eq("follower_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(120);
+
+  const followingIds = [...new Set((followRows ?? []).map((r: any) => r.following_id).filter(Boolean))] as string[];
+  let following: ProfileFollowingSummary[] = [];
+  if (followingIds.length > 0) {
+    const { data: profRows } = await supabase
+      .from("profiles")
+      .select("id, slug, display_name, avatar_url")
+      .in("id", followingIds);
+    const byId = new Map(
+      (profRows ?? []).map((p: any) => [
+        String(p.id),
+        {
+          id: String(p.id),
+          slug: String(p.slug ?? ""),
+          displayName: String(p.display_name ?? "Creator"),
+          avatarUrl: p.avatar_url ? String(p.avatar_url) : null,
+        } satisfies ProfileFollowingSummary,
+      ]),
+    );
+    following = followingIds.map((id) => byId.get(id)).filter(Boolean) as ProfileFollowingSummary[];
+  }
+
   return (
     <ProfilePageClient
       email={email}
@@ -164,6 +195,7 @@ export default async function ProfilePage() {
       mySubmissions={mySubmissions}
       favoriteProjects={favoriteProjects}
       favoriteSubmissions={favoriteSubmissions}
+      following={following}
     />
   );
 }

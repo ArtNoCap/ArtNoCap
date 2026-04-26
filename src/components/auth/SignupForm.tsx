@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import { AUTH_RETURN_FLASH_KEY } from "@/lib/auth-flash";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { safeReturnPath } from "@/lib/return-to";
@@ -20,6 +21,8 @@ export function SignupForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,6 +47,24 @@ export function SignupForm() {
     setError("");
     setBusy(true);
     try {
+      if (siteKey) {
+        if (!captchaToken) {
+          setError("Please complete the captcha.");
+          return;
+        }
+        const verify = await fetch("/api/captcha/turnstile", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ token: captchaToken }),
+        });
+        const vjson = (await verify.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+        if (!verify.ok || !vjson?.ok) {
+          setCaptchaToken(null);
+          setError(vjson?.error || "Captcha failed. Please try again.");
+          return;
+        }
+      }
+
       const supabase = createSupabaseBrowserClient();
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: e164,
@@ -152,6 +173,12 @@ export function SignupForm() {
             />
           </div>
 
+          {siteKey ? (
+            <div className="pt-2">
+              <TurnstileWidget siteKey={siteKey} onToken={setCaptchaToken} />
+            </div>
+          ) : null}
+
           {error ? (
             <p id="signup-error" className="text-sm text-red-600" role="alert">
               {error}
@@ -190,7 +217,13 @@ export function SignupForm() {
               acceptance.
             </span>
           </label>
-          <Button type="submit" variant="primary" size="lg" className="w-full justify-center" disabled={busy}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            className="w-full justify-center"
+            disabled={busy || (Boolean(siteKey) && !captchaToken)}
+          >
             {busy ? "Creating account…" : "Create profile & continue"}
           </Button>
           <p className="text-center text-xs text-slate-500">
