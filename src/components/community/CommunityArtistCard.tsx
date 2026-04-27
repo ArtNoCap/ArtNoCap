@@ -45,8 +45,11 @@ export function CommunityArtistCard({ p }: { p: CommunityProfile }) {
         ) : null}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-950/20 via-slate-950/30 to-slate-950/70" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(129,140,248,0.22),transparent_55%)]" />
-        <div className="relative flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="relative">
+          <Badge className="absolute right-0 top-0 border border-white/20 bg-white/15 text-xs font-bold text-white backdrop-blur-sm">
+            {experienceLabel(p.experienceLevel)}
+          </Badge>
+          <div className="flex min-w-0 items-center gap-3 pr-20">
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-white ring-2 ring-white/40 shadow-lg shadow-slate-950/30">
               <Image
                 src={p.avatarUrl || fallback}
@@ -63,10 +66,6 @@ export function CommunityArtistCard({ p }: { p: CommunityProfile }) {
               </p>
             </div>
           </div>
-
-          <Badge className="shrink-0 border border-white/20 bg-white/15 text-xs font-bold text-white backdrop-blur-sm">
-            {experienceLabel(p.experienceLevel)}
-          </Badge>
         </div>
       </div>
 
