@@ -12,6 +12,7 @@ const nav = [
   { href: "/#how-it-works", label: "How It Works" },
   { href: "/community", label: "Community" },
   { href: "/blog", label: "Journal" },
+  { href: "/archive", label: "Archive" },
   { href: "/about", label: "About" },
 ];
 

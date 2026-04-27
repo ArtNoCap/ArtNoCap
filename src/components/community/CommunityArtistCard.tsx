@@ -58,7 +58,7 @@ export function CommunityArtistCard({ p }: { p: CommunityProfile }) {
               />
             </div>
             <div className="min-w-0 pt-0.5">
-              <p className="truncate text-lg font-bold tracking-tight text-white drop-shadow-md sm:text-xl">
+              <p className="line-clamp-2 text-lg font-bold leading-tight tracking-tight text-white drop-shadow-md sm:text-xl">
                 {p.displayName || "Creator"}
               </p>
             </div>
