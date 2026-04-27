@@ -7,11 +7,15 @@ import {
   overlayWinningSubmissionCovers,
 } from "@/lib/catalog/winning-submission-cover";
 
-export async function fetchProjectsFromSupabase(supabase: SupabaseClient): Promise<Project[]> {
+export async function fetchProjectsFromSupabase(
+  supabase: SupabaseClient,
+  now = new Date(),
+): Promise<Project[]> {
   const { data, error } = await supabase
     .from("projects")
     .select("*")
     .is("archived_at", null)
+    .gt("ends_at", now.toISOString())
     .order("created_at", { ascending: false });
   if (error || !data) return [];
   const projects = data.map((r) => mapDbProject(r as Record<string, unknown>));

@@ -131,7 +131,8 @@ export function ProjectCard({
               {project.title}
             </h3>
             <p className="mt-1 text-sm text-slate-600">
-              by <span className="font-medium text-slate-700">@{artist.slug}</span>
+              <span className="text-slate-500">by </span>
+              <span className="font-medium text-slate-900">{artist.displayName}</span>
             </p>
           </div>
           {tagPills.length > 0 ? (
