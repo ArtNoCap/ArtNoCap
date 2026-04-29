@@ -5,6 +5,13 @@ import type { BlogPostMeta } from "@/types/blog";
  */
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: "why-most-design-feedback-doesnt-work",
+    title: "Why Most Design Feedback Doesn’t Work (And What to Do Instead)",
+    publishedAt: "2026-04-29T12:00:00.000Z",
+    summary:
+      "Most design feedback fails because it’s vague and context-free. Here’s a better approach: compare multiple directions early, choose what’s strongest, and reduce endless iteration.",
+  },
+  {
     slug: "why-some-designs-gain-momentum",
     title: "Why Some Designs Gain Momentum (And Others Don’t)",
     publishedAt: "2026-04-25T12:00:00.000Z",
