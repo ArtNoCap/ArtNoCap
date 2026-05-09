@@ -9,14 +9,14 @@ export const BLOG_POSTS: BlogPostMeta[] = [
     title: "Constraints Don’t Kill Creativity — They Aim It",
     publishedAt: "2026-05-07T12:00:00.000Z",
     summary:
-      "Over-specifying a brief shrinks the space for good ideas—but vague briefs create noise. Here’s how to set constraints that invite strong submissions: define the goal, pick the few variables that matter, and leave room where it counts.",
+      "A clearer creative brief for design submissions: define goals and must-haves, constrain priorities (not every pixel), and leave room so explorations on ArtNoCap stay aligned and comparable.",
   },
   {
     slug: "how-to-choose-when-everything-is-close",
     title: "How to Choose When Every Submission Feels “Close”",
     publishedAt: "2026-05-08T12:00:00.000Z",
     summary:
-      "When multiple designs are good, the decision isn’t about taste alone—it’s about fit under real constraints. Use this simple framework to decide faster: goal alignment, clarity at a glance, durability over time, and practical readiness.",
+      "When several designs feel equally strong, decide with the brief: alignment, glance-level clarity, durability, and risk—then treat ArtNoCap votes as a signal, not the whole verdict.",
   },
   {
     slug: "why-you-should-share-your-project",
