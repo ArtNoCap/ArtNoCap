@@ -5,6 +5,27 @@ import type { BlogPostMeta } from "@/types/blog";
  */
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: "constraints-create-better-work",
+    title: "Constraints Don’t Kill Creativity — They Aim It",
+    publishedAt: "2026-05-07T12:00:00.000Z",
+    summary:
+      "Over-specifying a brief shrinks the space for good ideas—but vague briefs create noise. Here’s how to set constraints that invite strong submissions: define the goal, pick the few variables that matter, and leave room where it counts.",
+  },
+  {
+    slug: "how-to-choose-when-everything-is-close",
+    title: "How to Choose When Every Submission Feels “Close”",
+    publishedAt: "2026-05-08T12:00:00.000Z",
+    summary:
+      "When multiple designs are good, the decision isn’t about taste alone—it’s about fit under real constraints. Use this simple framework to decide faster: goal alignment, clarity at a glance, durability over time, and practical readiness.",
+  },
+  {
+    slug: "why-you-should-share-your-project",
+    title: "Why You Should Share Your Project (And Let People Show Up)",
+    publishedAt: "2026-05-06T12:00:00.000Z",
+    summary:
+      "Keeping a creative project private feels safe—but it quietly limits what you can learn. Here’s why posting a public brief beats endless solo refinement: real interpretations, faster recognition, and a clearer path to a decision.",
+  },
+  {
     slug: "why-most-design-feedback-doesnt-work",
     title: "Why Most Design Feedback Doesn’t Work (And What to Do Instead)",
     publishedAt: "2026-04-29T12:00:00.000Z",
